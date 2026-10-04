@@ -18,7 +18,7 @@
 
 可以把它理解为“企业内部的 WorkBuddy”。这里描述的是产品方向：企业自己的 AI 工作伙伴，不是腾讯 WorkBuddy 的官方项目，也不代表两者具有同样的能力。
 
-![员工 Web 首页](images/01-web-home.png)
+![员工 Web 首页](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/01-web-home.png)
 
 *员工入口：让企业知识，变成员工真正用得上的工作助力。*
 
@@ -52,11 +52,11 @@ Web 是主要体验路径，不要求所有员工安装 Electron，也不要求�
 
 员工可以描述问题，看到 Markdown 渲染后的回答、依据分类和来源引用。当前页面支持会话切换；历史还保存在页面内存中，服务端持久化会话是后续规划。
 
-![带来源的知识问答](images/02-web-knowledge-answer.png)
+![带来源的知识问答](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/02-web-knowledge-answer.png)
 
 *示例：报修超过 24 小时未响应，检索结果引用对应 SOP。演示模式没有调用大模型。*
 
-![员工登录入口](images/03-web-login.png)
+![员工登录入口](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/03-web-login.png)
 
 *开发登录用于本地验证。生产需要配置真实身份体系，不能沿用演示账号。*
 
@@ -66,23 +66,23 @@ Electron 仍然保留。当任务需要本地文件、桌面运行时或本机�
 
 管理员可以导入 PDF、DOCX、XLSX、CSV、Markdown、JSON 和文本。后端将导入任务持久化，Worker 完成解析、切片和索引，再按当前员工身份过滤检索结果。
 
-![知识库列表与详情](images/05-knowledge-library.png)
+![知识库列表与详情](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/05-knowledge-library.png)
 
 *分类、归属部门、可见范围、片段数量和正文集中管理。*
 
-![知识文件上传](images/06-knowledge-upload.png)
+![知识文件上传](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/06-knowledge-upload.png)
 
 *文件进入异步处理链路，而不是只作为聊天附件存在。*
 
-![知识可见范围配置](images/07-knowledge-permissions.png)
+![知识可见范围配置](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/07-knowledge-permissions.png)
 
 *在线录入也能配置角色范围。图中员工和角色 ID 均为样例。*
 
-![后台验证知识检索](images/08-knowledge-search.png)
+![后台验证知识检索](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/08-knowledge-search.png)
 
 *管理员可以直接检查命中了哪些片段。界面中的相关度是内部排序分数，不是“答案可信概率”。*
 
-![知识编辑](images/09-knowledge-edit.png)
+![知识编辑](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/09-knowledge-edit.png)
 
 *维护制度、调整权限和重新索引，都是持续运营的一部分。*
 
@@ -100,15 +100,15 @@ Electron 仍然保留。当任务需要本地文件、桌面运行时或本机�
 
 一份 manifest 描述能力名称、业务输入、调用工具、风险等级、允许角色、人工确认策略和输出契约。平台校验、审核和发布后，Runtime 才会执行已启用的能力。
 
-![Skill 提交审核](images/10-skill-review.png)
+![Skill 提交审核](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/10-skill-review.png)
 
 *示例包含工单派单、线索匹配、合同风险预审和知识问答。列表状态是演示数据，不代表这些企业系统已经真实接入。*
 
-![已发布 Skill](images/11-skill-installed.png)
+![已发布 Skill](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/11-skill-installed.png)
 
 *发布与启停分开管理，能力不应上传后立即无条件执行。*
 
-![Skill manifest 编辑](images/12-skill-manifest.png)
+![Skill manifest 编辑](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/12-skill-manifest.png)
 
 *通过明确的配置描述能力，而不是把风险控制藏在一段自然语言里。*
 
@@ -120,11 +120,11 @@ Electron 仍然保留。当任务需要本地文件、桌面运行时或本机�
 
 流程是：员工提出任务 → Skill Runtime 检查身份与风险 → 选择连接器能力 → HTTP Adapter 组装请求 → 业务系统检查权限并返回结果。
 
-![连接器管理](images/13-connectors.png)
+![连接器管理](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/13-connectors.png)
 
 *当前页面展示五类演示连接器；真实接口需要单独配置与联调。示例中的 OAuth2/SSO 标签并不意味着已实现所有系统的换票和续期。*
 
-![新建连接器](images/14-connector-create.png)
+![新建连接器](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/14-connector-create.png)
 
 *基础连接器可以在界面创建；高级字段映射目前通过 API 配置。凭证放在后端环境变量中，不写入文章、浏览器或公开仓库。*
 
@@ -183,13 +183,13 @@ return this.confirmationModel.findOneAndUpdate({
 
 这不等于跨系统“恰好执行一次”。请求超时后，业务系统可能已经完成写入；生产还需要业务侧幂等键、状态核查和错误恢复流程。平台目前不自动重试写入。
 
-![审计中心](images/15-audit.png)
+![审计中心](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/15-audit.png)
 
 *图中既有初始化样例，也有本次真实产生的知识检索记录。审计用于追溯过程，不等于已经满足某项合规认证。*
 
 ## 技术架构：三个入口，一套企业后端
 
-![OpenWorkMate 技术架构](images/architecture.png)
+![OpenWorkMate 技术架构](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/architecture.png)
 
 - 员工 Web：React + Vite，问答、Markdown 渲染和来源引用。
 - 治理后台：React，管理知识、Skill、连接器和审计。
@@ -199,7 +199,7 @@ return this.confirmationModel.findOneAndUpdate({
 
 模型密钥留在服务器端。需要说明的是：调用外部模型时，问题、检索片段及工具结果可能发送给模型服务。私有部署应用不自动意味着所有数据不出网；企业必须明确模型和数据边界。
 
-![治理总览](images/04-admin-overview.png)
+![治理总览](https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/04-admin-overview.png)
 
 *管理与执行分开：员工面向任务，管理员面向组织资产与风险。*
 

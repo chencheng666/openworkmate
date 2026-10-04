@@ -15,7 +15,7 @@
 <p>于是，我们把这个项目整理成了 <strong>OpenWorkMate</strong>，正式开源。</p>
 <p>项目地址：<a href="https://github.com/chencheng666/openworkmate">github.com/chencheng666/openworkmate</a></p>
 <p>可以把它理解为“企业内部的 WorkBuddy”。这里描述的是产品方向：企业自己的 AI 工作伙伴，不是腾讯 WorkBuddy 的官方项目，也不代表两者具有同样的能力。</p>
-<p><img src="images/01-web-home.png" alt="员工 Web 首页"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/01-web-home.png" alt="员工 Web 首页"></p>
 <p><em>员工入口：让企业知识，变成员工真正用得上的工作助力。</em></p>
 <h2>先说明：这个项目怎样使用 GPT‑6 开发</h2>
 <p><strong>这轮开源版本由维护者使用 GPT‑6 辅助开发。</strong> GPT‑6 参与了开源整理、品牌替换、功能补充、测试验证和文章编写；维护者负责提出业务需求、判断实现边界、验收和发布。</p>
@@ -35,22 +35,22 @@
 <h2>第一站：员工只需要打开网页</h2>
 <p>Web 是主要体验路径，不要求所有员工安装 Electron，也不要求每台电脑运行 OpenClaw。</p>
 <p>员工可以描述问题，看到 Markdown 渲染后的回答、依据分类和来源引用。当前页面支持会话切换；历史还保存在页面内存中，服务端持久化会话是后续规划。</p>
-<p><img src="images/02-web-knowledge-answer.png" alt="带来源的知识问答"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/02-web-knowledge-answer.png" alt="带来源的知识问答"></p>
 <p><em>示例：报修超过 24 小时未响应，检索结果引用对应 SOP。演示模式没有调用大模型。</em></p>
-<p><img src="images/03-web-login.png" alt="员工登录入口"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/03-web-login.png" alt="员工登录入口"></p>
 <p><em>开发登录用于本地验证。生产需要配置真实身份体系，不能沿用演示账号。</em></p>
 <p>Electron 仍然保留。当任务需要本地文件、桌面运行时或本机工具时，它有独立价值；如果需求只是制度查询和业务接口调用，先用 Web 通常更直接。</p>
 <h2>第二站：知识库不是“上传完就结束”</h2>
 <p>管理员可以导入 PDF、DOCX、XLSX、CSV、Markdown、JSON 和文本。后端将导入任务持久化，Worker 完成解析、切片和索引，再按当前员工身份过滤检索结果。</p>
-<p><img src="images/05-knowledge-library.png" alt="知识库列表与详情"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/05-knowledge-library.png" alt="知识库列表与详情"></p>
 <p><em>分类、归属部门、可见范围、片段数量和正文集中管理。</em></p>
-<p><img src="images/06-knowledge-upload.png" alt="知识文件上传"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/06-knowledge-upload.png" alt="知识文件上传"></p>
 <p><em>文件进入异步处理链路，而不是只作为聊天附件存在。</em></p>
-<p><img src="images/07-knowledge-permissions.png" alt="知识可见范围配置"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/07-knowledge-permissions.png" alt="知识可见范围配置"></p>
 <p><em>在线录入也能配置角色范围。图中员工和角色 ID 均为样例。</em></p>
-<p><img src="images/08-knowledge-search.png" alt="后台验证知识检索"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/08-knowledge-search.png" alt="后台验证知识检索"></p>
 <p><em>管理员可以直接检查命中了哪些片段。界面中的相关度是内部排序分数，不是“答案可信概率”。</em></p>
-<p><img src="images/09-knowledge-edit.png" alt="知识编辑"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/09-knowledge-edit.png" alt="知识编辑"></p>
 <p><em>维护制度、调整权限和重新索引，都是持续运营的一部分。</em></p>
 <h3>现在用的是什么“向量数据库”？</h3>
 <p>当前数据存储使用 MongoDB，<strong>没有要求部署专用向量数据库</strong>。</p>
@@ -59,19 +59,19 @@
 <h2>第三站：把业务经验变成 Skill</h2>
 <p>这里的 Skill 不是“给模型写一段角色提示词”这么简单。</p>
 <p>一份 manifest 描述能力名称、业务输入、调用工具、风险等级、允许角色、人工确认策略和输出契约。平台校验、审核和发布后，Runtime 才会执行已启用的能力。</p>
-<p><img src="images/10-skill-review.png" alt="Skill 提交审核"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/10-skill-review.png" alt="Skill 提交审核"></p>
 <p><em>示例包含工单派单、线索匹配、合同风险预审和知识问答。列表状态是演示数据，不代表这些企业系统已经真实接入。</em></p>
-<p><img src="images/11-skill-installed.png" alt="已发布 Skill"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/11-skill-installed.png" alt="已发布 Skill"></p>
 <p><em>发布与启停分开管理，能力不应上传后立即无条件执行。</em></p>
-<p><img src="images/12-skill-manifest.png" alt="Skill manifest 编辑"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/12-skill-manifest.png" alt="Skill manifest 编辑"></p>
 <p><em>通过明确的配置描述能力，而不是把风险控制藏在一段自然语言里。</em></p>
 <p>当前版本已经有校验、审核、发布、角色门控、工具执行和结构化输出检查；它还不是完整的通用工作流平台。多步骤编排、可视化编辑、自动评测、灰度发布等，仍需继续建设。</p>
 <h2>第四站：到底怎么调用 OA、工单和 CRM？</h2>
 <p>当前真实接入走的是 <strong>后端 HTTP/HTTPS + JSON</strong>，不是默认通过 RPC 框架，也不是通过 RPA 模拟点击其他系统。</p>
 <p>流程是：员工提出任务 → Skill Runtime 检查身份与风险 → 选择连接器能力 → HTTP Adapter 组装请求 → 业务系统检查权限并返回结果。</p>
-<p><img src="images/13-connectors.png" alt="连接器管理"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/13-connectors.png" alt="连接器管理"></p>
 <p><em>当前页面展示五类演示连接器；真实接口需要单独配置与联调。示例中的 OAuth2/SSO 标签并不意味着已实现所有系统的换票和续期。</em></p>
-<p><img src="images/14-connector-create.png" alt="新建连接器"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/14-connector-create.png" alt="新建连接器"></p>
 <p><em>基础连接器可以在界面创建；高级字段映射目前通过 API 配置。凭证放在后端环境变量中，不写入文章、浏览器或公开仓库。</em></p>
 <p>以“工单查询”为例，业务系统需要提供网络可达的接口、认证方式、响应契约，以及员工身份和数据权限约定。原有 API 符合契约时可以直接复用，不必为了接入而重写整个系统。</p>
 <p>以下是一个精简的配置示例，不是某个真实系统的接口：</p>
@@ -113,10 +113,10 @@
 </code></pre>
 <p>条件匹配与状态更新在同一次数据库操作中完成，避免并发重复消费同一个确认令牌。</p>
 <p>这不等于跨系统“恰好执行一次”。请求超时后，业务系统可能已经完成写入；生产还需要业务侧幂等键、状态核查和错误恢复流程。平台目前不自动重试写入。</p>
-<p><img src="images/15-audit.png" alt="审计中心"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/15-audit.png" alt="审计中心"></p>
 <p><em>图中既有初始化样例，也有本次真实产生的知识检索记录。审计用于追溯过程，不等于已经满足某项合规认证。</em></p>
 <h2>技术架构：三个入口，一套企业后端</h2>
-<p><img src="images/architecture.png" alt="OpenWorkMate 技术架构"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/architecture.png" alt="OpenWorkMate 技术架构"></p>
 <ul>
 <li>员工 Web：React + Vite，问答、Markdown 渲染和来源引用。</li>
 <li>治理后台：React，管理知识、Skill、连接器和审计。</li>
@@ -125,7 +125,7 @@
 <li>可选桌面：Electron + ClawX/OpenClaw，保留本机能力，Renderer 经 Main 代理访问。</li>
 </ul>
 <p>模型密钥留在服务器端。需要说明的是：调用外部模型时，问题、检索片段及工具结果可能发送给模型服务。私有部署应用不自动意味着所有数据不出网；企业必须明确模型和数据边界。</p>
-<p><img src="images/04-admin-overview.png" alt="治理总览"></p>
+<p><img src="https://raw.githubusercontent.com/chencheng666/openworkmate/v0.1.0-alpha.1/docs/images/04-admin-overview.png" alt="治理总览"></p>
 <p><em>管理与执行分开：员工面向任务，管理员面向组织资产与风险。</em></p>
 <h2>可以从哪些场景开始？</h2>
 <p><strong>制度与 SOP 查询。</strong> 找到规则，并展示原文引用。最适合先做一个范围小、能人工判断答案的试点。</p>

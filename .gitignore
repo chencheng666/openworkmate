@@ -1,0 +1,87 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-electron/
+release/
+*.local
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+!**/.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test coverage
+coverage/
+playwright-report/
+test-results/
+
+# Cache
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# Electron
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+
+resources/bin
+
+# Secrets
+*.p12
+*.pem
+*.key
+
+build/
+artifacts/
+backend/data/
+docs/pr-session-notes-*.md
+
+.cursor/
+.claude/
+.pnpm-store/
+package-lock.json
+
+# Generated extension bridges (created by scripts/generate-ext-bridge.mjs)
+electron/extensions/_ext-bridge.generated.ts
+src/extensions/_ext-bridge.generated.ts
+
+# 开源仓库不收录本地缓存与工作材料
+.electron-cache/
+.electron-builder-cache/
+outputs/
+*.db
+*.sqlite
+*.sqlite3

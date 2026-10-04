@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780">
+ <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#94a3b8"/></marker></defs>
+ <rect width="1200" height="780" rx="24" fill="#f8fafc"/>
+ <g font-family="PingFang SC,Microsoft YaHei,sans-serif" text-anchor="middle">
+ <text x="600" y="65" fill="#0f172a" font-size="32" font-weight="700">OpenWorkMate 技术架构</text>
+ <text x="600" y="98" fill="#64748b" font-size="17">Web 优先 · 可信身份 · 知识与业务能力治理</text>
+ <g fill="#eff6ff" stroke="#bfdbfe"><rect x="60" y="135" width="320" height="75" rx="14"/><rect x="440" y="135" width="320" height="75" rx="14"/><rect x="820" y="135" width="320" height="75" rx="14"/></g>
+ <g fill="#1d4ed8" font-size="22"><text x="220" y="180">员工 Web 对话</text><text x="600" y="180">管理后台</text><text x="980" y="180">可选 Electron / OpenClaw</text></g>
+ <g stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"><path d="M220 210v30h380v30"/><path d="M600 210v60"/><path d="M980 210v30H600"/></g>
+ <rect x="170" y="275" width="860" height="90" rx="16" fill="#2563eb"/>
+ <text x="600" y="313" fill="white" font-size="25" font-weight="600">NestJS + Fastify 企业后端</text>
+ <text x="600" y="343" fill="#dbeafe" font-size="18">JWT / OIDC · 知识可见范围 · 运行时 · 审计</text>
+ <g stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"><path d="M340 365v40"/><path d="M850 365v40"/></g>
+ <g fill="white" stroke="#cbd5e1"><rect x="80" y="410" width="490" height="85" rx="14"/><rect x="630" y="410" width="490" height="85" rx="14"/></g>
+ <g fill="#0f172a" font-size="23"><text x="325" y="445">知识检索 + 来源引用</text><text x="875" y="445">Skill Runtime + 风险确认</text></g>
+ <g fill="#64748b" font-size="17"><text x="325" y="474">Bigram / 可选 Embedding 混合排序</text><text x="875" y="474">角色 / 输入 / 一次性确认 / 输出检查</text></g>
+ <g stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"><path d="M325 495v40"/><path d="M875 495v40"/></g>
+ <g fill="#ecfeff" stroke="#a5f3fc"><rect x="80" y="540" width="490" height="80" rx="14"/><rect x="630" y="540" width="490" height="80" rx="14"/></g>
+ <g fill="#0e7490" font-size="21"><text x="325" y="571">MongoDB + 异步 Worker + 文件存储</text><text x="875" y="571">HTTP Adapter → OA / 工单 / CRM / BI</text></g>
+ <g fill="#64748b" font-size="16"><text x="325" y="601">文档、分片、任务、Skill 与审计集合</text><text x="875" y="601">按能力路由、字段映射、认证与失败处理</text></g>
+ <rect x="170" y="658" width="860" height="62" rx="13" fill="#0f172a"/>
+ <text x="600" y="695" fill="white" font-size="21">服务端模型 API / 可替换的兼容接口</text>
+ <text x="600" y="756" fill="#64748b" font-size="15">演示模式不调用模型；当前向量在应用层检索，业务授权仍需系统侧校验</text>
+ </g>
+</svg>

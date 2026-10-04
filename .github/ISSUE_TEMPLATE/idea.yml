@@ -1,0 +1,13 @@
+name: 场景与想法
+description: 分享你希望工作伙伴帮助完成的任务
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 谁，在什么场景，想完成什么事？
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: 数据在哪、哪些动作需要确认、你有哪些想法？

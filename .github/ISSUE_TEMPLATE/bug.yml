@@ -1,0 +1,14 @@
+name: 问题反馈
+description: 提供可复现的问题，帮助一起修复
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤与预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 系统、版本、脱敏日志与截图
+      description: 请勿上传真实凭证、企业内部资料或员工个人信息。

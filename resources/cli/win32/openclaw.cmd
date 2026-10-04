@@ -1,0 +1,43 @@
+@echo off
+setlocal
+
+if /i "%1"=="update" (
+    echo openclaw is managed by ClawX ^(bundled version^).
+    echo.
+    echo To update openclaw, update ClawX:
+    echo   Open ClawX ^> Settings ^> Check for Updates
+    echo   Or download the latest version from https://github.com/chencheng666/openworkmate
+    exit /b 0
+)
+
+rem Switch console to UTF-8 so Unicode box-drawing and CJK text render correctly
+rem on non-English Windows (e.g. Chinese CP936). Save the previous codepage to restore later.
+for /f "tokens=2 delims=:." %%a in ('chcp') do set /a "_CP=%%a" 2>nul
+chcp 65001 >nul 2>&1
+
+set OPENCLAW_EMBEDDED_IN=ClawX
+set "NODE_EXE=%~dp0..\bin\node.exe"
+set "OPENCLAW_RUNTIME_ROOT=%~dp0..\openclaw-runtime"
+set "OPENCLAW_DIR="
+for /d %%d in ("%OPENCLAW_RUNTIME_ROOT%\openclaw-*") do if not defined OPENCLAW_DIR set "OPENCLAW_DIR=%%~fd"
+if not defined OPENCLAW_DIR set "OPENCLAW_DIR=%~dp0..\openclaw"
+set "OPENCLAW_ENTRY=%OPENCLAW_DIR%\openclaw.mjs"
+if exist "%OPENCLAW_RUNTIME_ROOT%" set "OPENCLAW_PLUGIN_STAGE_DIR=%OPENCLAW_RUNTIME_ROOT%"
+
+set "_USE_BUNDLED_NODE=0"
+if exist "%NODE_EXE%" (
+    "%NODE_EXE%" -e "const [maj,min]=process.versions.node.split('.').map(Number);process.exit((maj>22||maj===22&&min>=16)?0:1)" >nul 2>&1
+    if not errorlevel 1 set "_USE_BUNDLED_NODE=1"
+)
+
+if "%_USE_BUNDLED_NODE%"=="1" (
+    "%NODE_EXE%" "%OPENCLAW_ENTRY%" %*
+) else (
+    set ELECTRON_RUN_AS_NODE=1
+    "%~dp0..\..\ClawX.exe" "%OPENCLAW_ENTRY%" %*
+)
+set _EXIT=%ERRORLEVEL%
+
+if defined _CP chcp %_CP% >nul 2>&1
+
+endlocal & exit /b %_EXIT%

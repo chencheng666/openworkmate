@@ -1,0 +1,286 @@
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+const { rmSyncMock } = vi.hoisted(() => ({ rmSyncMock: vi.fn() }));
+
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
+  const wrappedRmSync: typeof actual.rmSync = (...args) => {
+    rmSyncMock(...args);
+    return actual.rmSync(...args);
+  };
+  return {
+    ...actual,
+    default: { ...actual, rmSync: wrappedRmSync },
+    rmSync: wrappedRmSync,
+  };
+});
+
+vi.mock('@electron/utils/logger', () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { cleanupAgentsSymlinkedSkills } from '@electron/gateway/skills-symlink-cleanup';
+import { logger } from '@electron/utils/logger';
+
+const SYMLINK_TYPE: 'dir' | 'junction' = process.platform === 'win32' ? 'junction' : 'dir';
+
+describe('cleanupAgentsSymlinkedSkills', () => {
+  let root: string;
+  let skillsDir: string;
+  let agentsRootDir: string;
+  let agentsSkillsDir: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), 'clawx-skills-cleanup-'));
+    skillsDir = path.join(root, 'openclaw', 'skills');
+    agentsRootDir = path.join(root, 'agents');
+    agentsSkillsDir = path.join(agentsRootDir, 'skills');
+    mkdirSync(skillsDir, { recursive: true });
+    mkdirSync(agentsSkillsDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  function makeAgentSkill(name: string): string {
+    const dir = path.join(agentsSkillsDir, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, 'SKILL.md'), '# test\n');
+    return dir;
+  }
+
+  it('removes symlinks whose realpath resolves into the agents/skills dir', () => {
+    const target = makeAgentSkill('lark-foo');
+    const link = path.join(skillsDir, 'lark-foo');
+    symlinkSync(target, link, SYMLINK_TYPE);
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual(['lark-foo']);
+    expect(res.examined).toBe(1);
+    expect(existsSync(link)).toBe(false);
+    expect(existsSync(target)).toBe(true);
+  });
+
+  it('removes multiple .agents/skills-targeted symlinks in one pass', () => {
+    for (const name of ['lark-base', 'lark-im', 'lark-doc']) {
+      const target = makeAgentSkill(name);
+      symlinkSync(target, path.join(skillsDir, name), SYMLINK_TYPE);
+    }
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed.sort()).toEqual(['lark-base', 'lark-doc', 'lark-im']);
+    expect(res.examined).toBe(3);
+  });
+
+  it('keeps in-tree symlinks and regular directories', () => {
+    const realSkillDir = path.join(skillsDir, 'real-skill');
+    mkdirSync(realSkillDir);
+    writeFileSync(path.join(realSkillDir, 'SKILL.md'), '');
+    const insideLink = path.join(skillsDir, 'alias');
+    symlinkSync(realSkillDir, insideLink, SYMLINK_TYPE);
+
+    const plainDir = path.join(skillsDir, 'plain');
+    mkdirSync(plainDir);
+    writeFileSync(path.join(plainDir, 'SKILL.md'), '');
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual([]);
+    expect(res.examined).toBe(1);
+    expect(lstatSync(insideLink).isSymbolicLink()).toBe(true);
+    expect(lstatSync(plainDir).isDirectory()).toBe(true);
+  });
+
+  it('keeps symlinks pointing at unrelated locations', () => {
+    const elsewhere = path.join(root, 'elsewhere', 'foo');
+    mkdirSync(elsewhere, { recursive: true });
+    const link = path.join(skillsDir, 'foo');
+    symlinkSync(elsewhere, link, SYMLINK_TYPE);
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual([]);
+    expect(res.examined).toBe(1);
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+  });
+
+  it('keeps symlinks pointing under .agents but outside .agents/skills', () => {
+    const tools = path.join(agentsRootDir, 'tools', 'foo');
+    mkdirSync(tools, { recursive: true });
+    writeFileSync(path.join(tools, 'README.md'), '');
+    const link = path.join(skillsDir, 'foo');
+    symlinkSync(tools, link, SYMLINK_TYPE);
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual([]);
+    expect(res.examined).toBe(1);
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+  });
+
+  it('removes file-type symlinks targeting a file inside .agents/skills', () => {
+    const skillDir = makeAgentSkill('lark-meta');
+    const targetFile = path.join(skillDir, 'SKILL.md');
+    const link = path.join(skillsDir, 'lark-meta.md');
+    symlinkSync(targetFile, link, 'file');
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual(['lark-meta.md']);
+    expect(existsSync(link)).toBe(false);
+    expect(existsSync(targetFile)).toBe(true);
+  });
+
+  it('skips broken symlinks without throwing', () => {
+    const dangling = path.join(root, 'gone');
+    const link = path.join(skillsDir, 'broken');
+    symlinkSync(dangling, link, SYMLINK_TYPE);
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual([]);
+    expect(res.examined).toBe(1);
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+  });
+
+  it('handles a missing skills dir as a no-op', () => {
+    rmSync(skillsDir, { recursive: true, force: true });
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res).toEqual({ removed: [], examined: 0 });
+  });
+
+  it('handles a missing agents dir without removing anything', () => {
+    rmSync(agentsRootDir, { recursive: true, force: true });
+    const target = path.join(agentsSkillsDir, 'lark-foo');
+    mkdirSync(target, { recursive: true });
+    const link = path.join(skillsDir, 'lark-foo');
+    symlinkSync(target, link, SYMLINK_TYPE);
+
+    rmSync(target, { recursive: true, force: true });
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual([]);
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+  });
+
+  it('follows realpath through an indirected agents dir symlink', () => {
+    const realAgentsRoot = path.join(root, 'real-agents');
+    const realAgentsSkills = path.join(realAgentsRoot, 'skills');
+    mkdirSync(path.join(realAgentsSkills, 'lark-foo'), { recursive: true });
+    rmSync(agentsRootDir, { recursive: true, force: true });
+    symlinkSync(realAgentsRoot, agentsRootDir, SYMLINK_TYPE);
+
+    const link = path.join(skillsDir, 'lark-foo');
+    symlinkSync(path.join(realAgentsSkills, 'lark-foo'), link, SYMLINK_TYPE);
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual(['lark-foo']);
+    expect(existsSync(link)).toBe(false);
+  });
+
+  it('falls back to parent realpath when agents/skills does not exist yet', () => {
+    rmSync(agentsSkillsDir, { recursive: true, force: true });
+
+    const realAgentsSkills = path.join(root, 'real', 'agents', 'skills');
+    mkdirSync(realAgentsSkills, { recursive: true });
+    const target = path.join(realAgentsSkills, 'lark-foo');
+    mkdirSync(target);
+    writeFileSync(path.join(target, 'SKILL.md'), '');
+    const link = path.join(skillsDir, 'lark-foo');
+    symlinkSync(target, link, SYMLINK_TYPE);
+
+    // agentsRootDir exists, agentsSkillsDir does not: parent fallback should
+    // not falsely report containment for this unrelated target.
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+
+    expect(res.removed).toEqual([]);
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+  });
+
+  it('uses fs.rmSync({ force: true }) so directory symlinks/junctions delete on Windows', () => {
+    const target = makeAgentSkill('lark-rm');
+    const link = path.join(skillsDir, 'lark-rm');
+    symlinkSync(target, link, SYMLINK_TYPE);
+
+    rmSyncMock.mockClear();
+
+    const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+    expect(res.removed).toEqual(['lark-rm']);
+
+    const linkRmCall = rmSyncMock.mock.calls.find((args) => args[0] === link);
+    expect(linkRmCall).toBeDefined();
+    expect(linkRmCall?.[1]).toEqual({ force: true });
+  });
+
+  it('matches paths case-insensitively when running on Win32', () => {
+    // Create the agents tree with all-uppercase basenames so a lowercase
+    // override differs lexically.  On case-insensitive filesystems (macOS
+    // APFS) this still passes because realpathSync canonicalises both sides;
+    // on case-sensitive filesystems (Linux ext4) the test only succeeds
+    // because of the Win32 lowercase normalisation in isInside().
+    const upperAgentsRoot = path.join(root, 'UPPER_AGENTS');
+    const upperAgentsSkills = path.join(upperAgentsRoot, 'UPPER_SKILLS');
+    const target = path.join(upperAgentsSkills, 'lark-foo');
+    mkdirSync(target, { recursive: true });
+    writeFileSync(path.join(target, 'SKILL.md'), '');
+
+    const link = path.join(skillsDir, 'lark-foo');
+    symlinkSync(target, link, SYMLINK_TYPE);
+
+    const lowered = path.join(root, 'upper_agents', 'upper_skills');
+
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      configurable: true,
+    });
+    try {
+      const res = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: lowered });
+      expect(res.removed).toEqual(['lark-foo']);
+    } finally {
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+        configurable: true,
+      });
+    }
+  });
+
+  it('is idempotent: a second invocation is a no-op and emits no info log', () => {
+    const target = makeAgentSkill('lark-once');
+    const link = path.join(skillsDir, 'lark-once');
+    symlinkSync(target, link, SYMLINK_TYPE);
+
+    const first = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+    expect(first.removed).toEqual(['lark-once']);
+
+    const infoMock = vi.mocked(logger.info);
+    infoMock.mockClear();
+
+    const second = cleanupAgentsSymlinkedSkills({ skillsDir, agentsDir: agentsSkillsDir });
+    expect(second).toEqual({ removed: [], examined: 0 });
+    expect(infoMock).not.toHaveBeenCalled();
+  });
+});

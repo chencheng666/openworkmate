@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * ClawX design tokens — CSS variable layer
+ * ──────────────────────────────────────────────────────────────────────────
+ *
+ * This file is the *CSS variable layer only*. HSL channel triplets are
+ * stored without an `hsl()` wrapper — `tailwind.config.js` re-assembles
+ * them through `hsl(var(--xxx))` or `hsl(var(--xxx) / <alpha-value>)`.
+ *
+ * Two groups of variables:
+ *
+ *   1. shadcn semantic tokens (--background / --foreground / --primary
+ *      / ...). The standard shadcn/ui palette — do not rename or remove,
+ *      Radix-driven components read these directly.
+ *
+ *   2. ClawX surface tokens (--surface-modal / --surface-input /
+ *      --surface-sidebar). Three light-mode blue-white layers used by
+ *      the enterprise workbench. In dark mode each one is redirected to
+ *      an existing shadcn token (--card / --muted / --background).
+ *
+ * Usage:
+ *   - Application code should always go through Tailwind utilities, e.g.
+ *       bg-foreground   bg-surface-modal   bg-brand
+ *     Do NOT hand-write `var(--xxx)` or `hsl(var(--xxx))` in components.
+ *   - Adding a new color: define the CSS variable here → map it to a
+ *     utility token in tailwind.config.js → use the utility in code.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* ── shadcn semantic tokens (light) ─────────────────────────── */
+    /* Blue-white enterprise workspace background. */
+    --background: 210 60% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 213 42% 90%;
+    --input: 213 42% 90%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+
+    /* ── Blue-white surfaces (light) ───────────────────────────── */
+    --surface-modal: 210 52% 98%;
+    --surface-input: 211 48% 96%;
+    --surface-sidebar: 214 58% 96%;
+  }
+
+  /* Neutral deep-gray dark palette */
+  .dark {
+    --background: 240 4% 11%;
+    --foreground: 210 20% 96%;
+    --card: 240 3% 14%;
+    --card-foreground: 210 20% 96%;
+    --popover: 240 3% 14%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 240 3% 18%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 240 3% 18%;
+    --muted-foreground: 220 8% 72%;
+    --accent: 240 3% 22%;
+    --accent-foreground: 210 20% 96%;
+    --destructive: 0 65% 42%;
+    --destructive-foreground: 210 20% 96%;
+    --border: 240 3% 24%;
+    --input: 240 3% 18%;
+    --ring: 217.2 91.2% 59.8%;
+
+    /* In dark mode the three cream surfaces collapse onto existing
+     * shadcn tokens:
+     *     modal   → card
+     *     input   → muted
+     *     sidebar → background
+     * This way every `bg-surface-*` utility resolves correctly in
+     * both themes, and components no longer need `dark:bg-card`-style
+     * companion classes for theme switching. */
+    --surface-modal: 240 3% 14%;
+    --surface-input: 240 3% 18%;
+    --surface-sidebar: 240 4% 11%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/30;
+}
+
+/* macOS traffic light spacing */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Smooth transitions */
+.transition-theme {
+  @apply transition-colors duration-200;
+}
+
+/* Focus ring */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+}
+
+/* Prose styling for markdown */
+.prose {
+  line-height: 1.6;
+}
+
+.prose p {
+  margin-bottom: 0.75em;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose ul,
+.prose ol {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-bottom: 0.25em;
+}
+
+.prose pre {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.5em;
+  text-align: left;
+}
+
+.prose th {
+  background: transparent;
+  font-weight: 700;
+}
+
+.dark .prose th {
+  background: hsl(var(--muted));
+}
+
+/* Typing indicator animation */
+@keyframes bounce {
+
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+
+  30% {
+    transform: translateY(-4px);
+  }
+}

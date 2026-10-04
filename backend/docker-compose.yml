@@ -1,0 +1,14 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: workmate-agent-platform-mongo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: workmate_agent_platform
+    volumes:
+      - workmate_agent_platform_mongo:/data/db
+
+volumes:
+  workmate_agent_platform_mongo:

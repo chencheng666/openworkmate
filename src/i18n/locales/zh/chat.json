@@ -1,0 +1,155 @@
+{
+    "gatewayNotRunning": "网关未运行",
+    "gatewayRequired": "企业智能体运行服务需要启动后才能使用聊天。系统会自动启动，您也可以在设置中手动启动。",
+    "welcome": {
+        "eyebrow": "企业内部 AI 业务执行入口",
+        "title": "OpenWorkMate",
+        "subtitle": "连接园区运营、招商选址、企业服务、知识库和内部系统数据，让员工用自然语言调度业务 Skills，安全推进流程。",
+        "mascotAlt": "OpenWorkMate工作伙伴助手",
+        "quickActionsTitle": "OpenWorkMate快捷任务",
+        "platformTitle": "OpenWorkMate能力",
+        "metrics": {
+            "title": "业务覆盖指标",
+            "parks": {
+                "value": "组织",
+                "label": "权限上下文"
+            },
+            "services": {
+                "value": "Skills",
+                "label": "业务能力"
+            },
+            "governance": {
+                "value": "数据",
+                "label": "系统连接"
+            }
+        },
+        "actions": {
+            "run": "发起任务",
+            "workOrder": {
+                "title": "园区工单",
+                "description": "报修、投诉、巡检、派单、催办和 SLA 跟踪。",
+                "prompt": "创建一个园区工单：示例产业园 A3 楼 2 层空调不制冷，影响企业办公，请判断类型、优先级、责任部门并生成派单建议。"
+            },
+            "investment": {
+                "title": "招商选址",
+                "description": "提取客户需求，匹配园区、载体、政策和跟进任务。",
+                "prompt": "帮我分析一个招商客户：新能源零部件企业，需要华北区域 3000 平厂房，三个月内入驻，请生成企业画像、选址匹配条件和下一步跟进计划。"
+            },
+            "enterpriseService": {
+                "title": "企业服务",
+                "description": "政策申报、融资、人力、法务、出海等服务编排。",
+                "prompt": "入园企业想申请专精特新政策，请列出需要收集的信息、材料清单、服务流程和需要人工确认的风险点。"
+            },
+            "knowledge": {
+                "title": "知识问答",
+                "description": "查询制度、合同规则、SOP、园区资料和历史案例。",
+                "prompt": "查询并总结园区报修处理 SOP，要求按步骤输出，并标注哪些节点需要运营人员确认。"
+            },
+            "operationInsight": {
+                "title": "运营洞察",
+                "description": "汇总工单趋势、超时风险、高频问题和满意度。",
+                "prompt": "帮我生成本周园区运营看板：关注工单趋势、SLA 超时风险、高频问题、责任部门分布和管理建议。"
+            }
+        },
+        "platform": {
+            "identity": {
+                "title": "组织权限",
+                "body": "按总部、城市公司、园区、企业角色加载可见数据和可执行动作。"
+            },
+            "skills": {
+                "title": "业务 Skills",
+                "body": "把工单、招商、政策、通知和 BI 能力封装为可治理资产。"
+            },
+            "audit": {
+                "title": "安全审计",
+                "body": "高风险动作二次确认，所有系统调用保留用户、对象、结果和时间记录。"
+            }
+        },
+        "roadmap": {
+            "title": "平台建设规划",
+            "items": {
+                "skillFactory": {
+                    "title": "员工 Skill 工厂",
+                    "body": "每个业务团队可提交自己的 Skill，经校验、审核、安装后进入企业能力库。"
+                },
+                "dataConnectors": {
+                    "title": "内部数据连接器",
+                    "body": "通过 MCP/API 代理连接 OA、ERP、CRM、工单、合同、BI 和园区系统。"
+                },
+                "knowledgeHub": {
+                    "title": "企业知识库",
+                    "body": "统一管理制度、SOP、政策、合同模板、历史案例，回答时返回来源。"
+                },
+                "workflowGate": {
+                    "title": "流程编排门控",
+                    "body": "区分只读查询、低风险写入、高风险审批，关键节点要求人工确认。"
+                },
+                "permissionAudit": {
+                    "title": "权限与审计",
+                    "body": "按组织、岗位、园区、数据域控制可见范围，记录每次 AI 调用和结果。"
+                },
+                "agentOps": {
+                    "title": "Agent 运营治理",
+                    "body": "监控 Skill 质量、命中率、失败率、成本和满意度，支持灰度发布与下架。"
+                }
+            }
+        }
+    },
+    "noLogs": "（暂无日志）",
+    "toolbar": {
+        "refresh": "刷新聊天",
+        "currentAgent": "当前对话对象：{{agent}}"
+    },
+    "taskPanel": {
+        "eyebrow": "运行视图",
+        "title": "任务脉络",
+        "emptyTitle": "还没有结构化步骤",
+        "emptyBody": "当一次运行开始后，企业智能体会在这里展示思考、工具调用和收尾状态。",
+        "status": {
+            "idle": "空闲",
+            "running_one": "1 个活动步骤",
+            "running_other": "{{count}} 个活动步骤"
+        },
+        "stepStatus": {
+            "running": "进行中",
+            "completed": "完成",
+            "error": "错误"
+        }
+    },
+    "executionGraph": {
+        "title": "执行关系图",
+        "branchLabel": "分支",
+        "thinkingLabel": "思考中",
+        "modelErrorTitle": "模型调用失败",
+        "agentRun": "{{agent}} 执行",
+        "collapsedSummary": "{{toolCount}} 个工具调用，{{processCount}} 条过程消息",
+        "collapseAction": "收起执行关系图"
+    },
+    "composer": {
+        "attachFiles": "添加文件",
+        "pickSkill": "选择技能",
+        "skillButton": "技能",
+        "skillPickerTitle": "{{agent}} 的快捷技能",
+        "skillSearchPlaceholder": "搜索技能",
+        "skillLoading": "正在加载技能...",
+        "skillEmpty": "未找到匹配的技能",
+        "pickAgent": "选择 Agent",
+        "clearTarget": "清除目标 Agent",
+        "targetChip": "@{{agent}}",
+        "agentPickerTitle": "将下一条消息直接发送给其他 Agent",
+        "gatewayDisconnectedPlaceholder": "网关未连接...",
+        "send": "发送",
+        "stop": "停止",
+        "gatewayConnected": "已连接",
+        "gatewayStatus": "gateway {{state}} | port: {{port}} {{pid}}",
+        "retryFailedAttachments": "重试失败的附件"
+    },
+    "historyBuckets": {
+        "today": "今天",
+        "yesterday": "昨天",
+        "withinWeek": "一周内",
+        "withinTwoWeeks": "两周内",
+        "withinMonth": "一个月内",
+        "older": "一个月之前"
+    }
+}

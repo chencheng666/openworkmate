@@ -1,0 +1,155 @@
+{
+    "gatewayNotRunning": "Gateway Not Running",
+    "gatewayRequired": "The OpenClaw Gateway needs to be running to use chat. It will start automatically, or you can start it from Settings.",
+    "welcome": {
+        "eyebrow": "WorkMate internal AI execution entry",
+        "title": "WorkMate Agent Platform",
+        "subtitle": "Connect park operations, leasing, enterprise services, knowledge, and internal system data so employees can use natural language to run governed business Skills.",
+        "mascotAlt": "WorkMate Agent Platform orca assistant",
+        "quickActionsTitle": "WorkMate Agent Platform quick tasks",
+        "platformTitle": "WorkMate Agent Platform capabilities",
+        "metrics": {
+            "title": "Business coverage",
+            "parks": {
+                "value": "Org",
+                "label": "permission context"
+            },
+            "services": {
+                "value": "Skills",
+                "label": "business assets"
+            },
+            "governance": {
+                "value": "Data",
+                "label": "system links"
+            }
+        },
+        "actions": {
+            "run": "Start task",
+            "workOrder": {
+                "title": "Park Tickets",
+                "description": "Repairs, complaints, inspections, dispatch, reminders, and SLA tracking.",
+                "prompt": "Create a park ticket: Building A3, floor 2, Beijing WorkMate U Valley has an air conditioner cooling issue that affects tenant operations. Classify it, assign priority, suggest the responsible team, and draft the dispatch note."
+            },
+            "investment": {
+                "title": "Leasing Match",
+                "description": "Extract customer needs and match parks, space, policies, and next actions.",
+                "prompt": "Analyze an investment leasing lead: a new energy parts company needs a 3,000 sqm factory in North China and wants to move in within three months. Generate the company profile, matching criteria, and follow-up plan."
+            },
+            "enterpriseService": {
+                "title": "Enterprise Services",
+                "description": "Orchestrate policy, financing, HR, legal, and overseas services.",
+                "prompt": "A tenant wants to apply for a specialized and innovative SME policy. List the information to collect, materials needed, service workflow, and risk points requiring human confirmation."
+            },
+            "knowledge": {
+                "title": "Knowledge Q&A",
+                "description": "Query policies, contract rules, SOPs, park materials, and cases.",
+                "prompt": "Find and summarize the park repair SOP as step-by-step guidance, and mark which steps require operations staff confirmation."
+            },
+            "operationInsight": {
+                "title": "Operations Insight",
+                "description": "Summarize ticket trends, SLA risk, frequent issues, and satisfaction.",
+                "prompt": "Generate this week's park operations dashboard: focus on ticket trends, SLA overdue risk, frequent issues, responsible team distribution, and management suggestions."
+            }
+        },
+        "platform": {
+            "identity": {
+                "title": "Org Permissions",
+                "body": "Load visible data and executable actions by HQ, city company, park, and tenant roles."
+            },
+            "skills": {
+                "title": "Business Skills",
+                "body": "Package tickets, leasing, policies, notifications, and BI as governed digital assets."
+            },
+            "audit": {
+                "title": "Security Audit",
+                "body": "Require confirmation for high-risk actions and retain user, object, result, and timestamp records."
+            }
+        },
+        "roadmap": {
+            "title": "Platform Roadmap",
+            "items": {
+                "skillFactory": {
+                    "title": "Employee Skill Factory",
+                    "body": "Business teams can submit Skills that are validated, reviewed, installed, and governed as enterprise assets."
+                },
+                "dataConnectors": {
+                    "title": "Internal Data Connectors",
+                    "body": "Use MCP/API proxies for OA, ERP, CRM, ticketing, contracts, BI, and park operations systems."
+                },
+                "knowledgeHub": {
+                    "title": "Enterprise Knowledge Hub",
+                    "body": "Manage policies, SOPs, templates, and cases with source-backed answers."
+                },
+                "workflowGate": {
+                    "title": "Workflow Gates",
+                    "body": "Separate read-only queries, low-risk writes, and high-risk approvals with human confirmation."
+                },
+                "permissionAudit": {
+                    "title": "Permission and Audit",
+                    "body": "Control visibility by org, role, park, and data domain while logging each AI action and result."
+                },
+                "agentOps": {
+                    "title": "Agent Operations",
+                    "body": "Track Skill quality, hit rate, failure rate, cost, and satisfaction with staged rollout and takedown."
+                }
+            }
+        }
+    },
+    "noLogs": "(No logs available yet)",
+    "toolbar": {
+        "refresh": "Refresh chat",
+        "currentAgent": "Talking to {{agent}}"
+    },
+    "taskPanel": {
+        "eyebrow": "Run View",
+        "title": "Task Outline",
+        "emptyTitle": "No structured steps yet",
+        "emptyBody": "Once a run starts, ClawX will surface thinking, tool calls, and handoff states here.",
+        "status": {
+            "idle": "Idle",
+            "running_one": "1 active step",
+            "running_other": "{{count}} active steps"
+        },
+        "stepStatus": {
+            "running": "Running",
+            "completed": "Done",
+            "error": "Error"
+        }
+    },
+    "executionGraph": {
+        "title": "Execution Graph",
+        "branchLabel": "branch",
+        "thinkingLabel": "Thinking",
+        "errorLabel": "Error",
+        "agentRun": "{{agent}} execution",
+        "collapsedSummary": "{{toolCount}} tool calls · {{processCount}} process messages",
+        "collapseAction": "Collapse execution graph"
+    },
+    "composer": {
+        "attachFiles": "Attach files",
+        "pickSkill": "Choose skill",
+        "skillButton": "Skills",
+        "skillPickerTitle": "Quick skill access for {{agent}}",
+        "skillSearchPlaceholder": "Search skills",
+        "skillLoading": "Loading skills...",
+        "skillEmpty": "No matching skills found",
+        "pickAgent": "Choose agent",
+        "clearTarget": "Clear target agent",
+        "targetChip": "@{{agent}}",
+        "agentPickerTitle": "Route the next message to another agent",
+        "gatewayDisconnectedPlaceholder": "Gateway not connected...",
+        "send": "Send",
+        "stop": "Stop",
+        "gatewayConnected": "connected",
+        "gatewayStatus": "gateway {{state}} | port: {{port}} {{pid}}",
+        "retryFailedAttachments": "Retry failed attachments"
+    },
+    "historyBuckets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "withinWeek": "Within 1 Week",
+        "withinTwoWeeks": "Within 2 Weeks",
+        "withinMonth": "Within 1 Month",
+        "older": "Older than 1 Month"
+    }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "workmate-knowledge",
+  "name": "企业企业知识库",
+  "description": "向企业智能体提供受身份权限控制、带来源引用的企业知识检索工具。",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "backendUrl": {
+        "type": "string",
+        "description": "OpenWorkMate后端 API 地址。"
+      },
+      "tenantId": {
+        "type": "string"
+      },
+      "defaultOrgId": {
+        "type": "string"
+      },
+      "roleIds": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    }
+  }
+}

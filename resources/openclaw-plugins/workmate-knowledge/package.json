@@ -1,0 +1,14 @@
+{
+  "name": "@workmate/openclaw-knowledge",
+  "version": "0.1.1",
+  "type": "module",
+  "private": true,
+  "openclaw": {
+    "extensions": ["./index.js"],
+    "runtimeExtensions": ["./index.js"],
+    "compat": {
+      "pluginApi": ">=2026.4.0",
+      "minGatewayVersion": ">=2026.4.0"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+packages:
+  - '.'
+  - 'admin-web'
+  - 'backend'
+  - 'web-app'
+
+ignoredBuiltDependencies:
+  - electron
+  - esbuild

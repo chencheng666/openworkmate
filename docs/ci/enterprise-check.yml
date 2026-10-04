@@ -1,0 +1,28 @@
+# 维护者具备工作流上传权限后，复制到 .github/workflows/check.yml 启用。
+name: 企业链路检查
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.31.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm check:public
+      - run: pnpm test:enterprise
+      - run: pnpm web:build
+      - run: pnpm admin:build
+      - run: pnpm --dir backend typecheck
+      - run: pnpm --dir backend build

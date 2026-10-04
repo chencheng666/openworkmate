@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workmate.local/schemas/skill-manifest.schema.json",
+  "title": "WorkMate Agent Platform Skill Manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "name",
+    "displayName",
+    "description",
+    "ownerDepartment",
+    "businessDomain",
+    "version",
+    "riskLevel",
+    "inputFields",
+    "tools",
+    "promptTemplate",
+    "outputContract",
+    "governance"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$" },
+    "displayName": { "type": "string", "minLength": 2, "maxLength": 80 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 1000 },
+    "ownerDepartment": { "type": "string" },
+    "businessDomain": { "type": "string" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "riskLevel": { "enum": ["low", "medium", "high"] },
+    "inputFields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "required", "description"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "enum": ["string", "number", "boolean", "date", "enum", "object"] },
+          "required": { "type": "boolean" },
+          "description": { "type": "string" },
+          "enumValues": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "connectorId", "actionKind", "requiredScopes", "riskLevel", "confirmationRequired"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "connectorId": { "type": "string" },
+          "actionKind": { "enum": ["read", "write", "approve", "notify"] },
+          "requiredScopes": { "type": "array", "items": { "type": "string" } },
+          "riskLevel": { "enum": ["low", "medium", "high"] },
+          "confirmationRequired": { "type": "boolean" }
+        }
+      }
+    },
+    "promptTemplate": { "type": "string" },
+    "outputContract": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["text", "json", "workflow"] },
+        "schema": { "type": "object" }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "required": ["dataDomains", "allowedRoleIds", "humanConfirmation", "auditLevel"],
+      "properties": {
+        "dataDomains": { "type": "array", "items": { "type": "string" } },
+        "allowedRoleIds": { "type": "array", "items": { "type": "string" } },
+        "humanConfirmation": { "enum": ["never", "on_write", "always"] },
+        "auditLevel": { "enum": ["standard", "strict"] }
+      }
+    }
+  }
+}

@@ -184,6 +184,10 @@ button { cursor: pointer; }
 .loading-answer { color: var(--muted); }
 
 .composer-wrap { padding-bottom: 20px; }
+.chat-mode-switch { display: inline-flex; gap: 2px; padding: 3px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 9px; }
+.chat-mode-switch button { background: transparent; border: 0; border-radius: 6px; color: var(--muted); padding: 4px 11px; font: inherit; font-size: 12px; cursor: pointer; }
+.chat-mode-switch button[aria-pressed=true] { color: white; background: var(--primary); }
+.chat-mode-switch button:disabled { cursor: wait; }
 .composer {
   display: flex;
   align-items: flex-end;

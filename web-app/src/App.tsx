@@ -29,7 +29,9 @@ type Message = {
   pending?: boolean;
 };
 
+type Mode = 'enterprise' | 'general';
 type Session = {
+  mode: Mode;
   id: string;
   title: string;
   updatedAt: number;
@@ -49,6 +51,11 @@ const quickPrompts = [
   { title: '制度查询', text: '帮我查一下企业园区普通报修的响应和升级规则', icon: BookOpen },
   { title: '运营洞察', text: '帮我梳理园区工单超时的主要原因和改进建议', icon: Search },
 ];
+const generalPrompts = [
+  { title: '学个知识', text: '用一个生活中的例子解释为什么会有月相变化。', icon: BookOpen },
+  { title: '帮我写作', text: '写一段简短的周末读书会邀请，语气自然一点。', icon: FileText },
+  { title: '一起想想', text: '想学一门新语言，每天只有二十分钟，怎么安排第一周？', icon: Search },
+];
 
 import { apiBase as WEB_API_BASE, native } from './platform';
 const FileResults = lazy(()=>import('./FileResults'));
@@ -56,8 +63,8 @@ const FeaturePanel = lazy(()=>import('./features/FeaturePanel'));
 const hasFeatures=Object.keys(import.meta.glob('./features/generated/*.json')).length>0;
 const MarkdownAnswer = lazy(() => import('./MarkdownAnswer'));
 
-function createSession(): Session {
-  return { id: crypto.randomUUID(), title: '新对话', updatedAt: Date.now(), messages: [] };
+function createSession(mode: Mode = 'enterprise'): Session {
+  return { id: crypto.randomUUID(), mode, title: '新对话', updatedAt: Date.now(), messages: [] };
 }
 
 function messageTitle(text: string): string {
@@ -146,6 +153,18 @@ export function App() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((session) => session.id === activeId) ?? sessions[0];
+  const general = activeSession.mode === 'general';
+  const switchMode = (mode: Mode) => {
+    if (sending || mode === activeSession.mode) return;
+    if (activeSession.messages.length === 0) {
+      setSessions(list => list.map(s => s.id === activeId ? {...s, mode} : s));
+    } else {
+      // 不把已聊过的企业资料、引用或工具结果带进通用模型上下文。
+      const next = createSession(mode);
+      setSessions(list => [next, ...list]);
+      setActiveId(next.id);
+    }
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -178,10 +197,10 @@ export function App() {
     }));
     setDraft('');
     setSending(true);
-    setStatusText('正在检索企业知识库…');
+    setStatusText(general ? '正在询问模型…' : '正在检索企业知识库…');
 
     try {
-      if (/^(?:\/升级(?:\s|$)|升级[：:])/.test(message)) {
+      if (!general && /^(?:\/升级(?:\s|$)|升级[：:])/.test(message)) {
         if(location.hostname!=='127.0.0.1' && location.hostname!=='localhost') throw new Error('源码升级只在维护者本机开放。');
         const request=message.replace(/^(?:\/升级|升级[：:])\s*/,'');
         if(['http://127.0.0.1:18790','http://127.0.0.1:5180'].includes(location.origin)){
@@ -203,6 +222,7 @@ export function App() {
         },
         body: JSON.stringify({
           sessionId: activeSession.id,
+          mode: activeSession.mode,
           message,
           history: previousHistory.map(({ role, content }) => ({ role, content })),
         }),
@@ -229,7 +249,7 @@ export function App() {
           citations: payload.citations,
         }],
       }));
-      setStatusText('企业知识库已连接');
+      setStatusText('服务已连接');
     } catch (error) {
       updateActiveSession((session) => ({
         ...session,
@@ -246,7 +266,7 @@ export function App() {
   };
 
   const startNewChat = () => {
-    const next = createSession();
+    const next = createSession(activeSession.mode);
     setSessions((current) => [next, ...current]);
     setActiveId(next.id);
     setDraft('');
@@ -331,10 +351,10 @@ export function App() {
           {activeSession.messages.length === 0 ? (
             <section className="welcome-panel">
               <img className="welcome-mark" src={brandIcon} alt="" />
-              <h1>今天想查什么？</h1>
-              <p className="welcome-copy">查制度、找流程，或询问已接入的业务。</p>
+              <h1>{general ? '想聊点什么？' : '今天想查什么？'}</h1>
+              <p className="welcome-copy">{general ? '学习、写作，或聊聊你感兴趣的问题。' : '查制度、找流程，或询问已接入的业务。'}</p>
               <div className="quick-grid">
-                {quickPrompts.map(({ title, text, icon: Icon }) => (
+                {(general ? generalPrompts : quickPrompts).map(({ title, text, icon: Icon }) => (
                   <button key={title} className="quick-card" onClick={() => void sendMessage(text)}>
                     <span><Icon size={18} /></span><strong>{title}</strong><small>{text}</small><ChevronRight size={16} />
                   </button>
@@ -348,7 +368,7 @@ export function App() {
                   {message.role === 'assistant' && <img className="assistant-avatar" src={brandIcon} alt="" />}
                   <div className="message-content">
                     <div className="message-bubble">
-                      {message.role === 'assistant' ? splitAnswerBlocks(message.content).map((block, index) => (
+                      {message.role === 'assistant' ? (general ? [{content:message.content} as AnswerBlock] : splitAnswerBlocks(message.content)).map((block, index) => (
                         <div key={`${block.title ?? 'answer'}-${index}`} className={`answer-block ${block.kind ? `is-${block.kind}` : ''}`}>
                           {block.title && <span className="evidence-tag">{block.title}</span>}
                           <Suspense fallback={<span role="status">正在排版…</span>}><MarkdownAnswer>{block.content}</MarkdownAnswer></Suspense>
@@ -371,11 +391,15 @@ export function App() {
         </div>
 
         <div className="composer-wrap" data-testid="web-composer">
+          <div className="chat-mode-switch" role="group" aria-label="问答模式">
+            <button type="button" aria-pressed={!general} disabled={sending} onClick={()=>switchMode('enterprise')}>企业问答</button>
+            <button type="button" aria-pressed={general} disabled={sending} onClick={()=>switchMode('general')}>通用问答</button>
+          </div>
           <form className="composer" onSubmit={(event) => { event.preventDefault(); void sendMessage(); }}>
-            <textarea aria-label="输入问题" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="描述你要处理的企业业务…" rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendMessage(); } }} />
+            <textarea aria-label="输入问题" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={general ? '直接问模型…' : '描述你要处理的企业业务…'} rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendMessage(); } }} />
             <button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送" aria-label="发送"><Send size={18} /></button>
           </form>
-          {/^(?:\/升级|升级[：:])/.test(draft)?<small className="composer-note">升级模式 · 只发送需求给编程模型，请勿粘贴业务资料或密钥。候选不会自动合并。</small>:authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
+          {general ? <small className="composer-note">{authConfig?.demoMode ? '演示模式未启用真实模型，暂不能使用通用问答。' : '直接询问模型，不读取企业知识库或调用业务工具。'}</small> : /^(?:\/升级|升级[：:])/.test(draft)?<small className="composer-note">升级模式 · 只发送需求给编程模型，请勿粘贴业务资料或密钥。候选不会自动合并。</small>:authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
         </div>
       </main>
       {fileSource!==null && <Suspense fallback={<span role="status">正在打开文件结果…</span>}><FileResults source={fileSource} close={()=>setFileSource(null)} /></Suspense>}

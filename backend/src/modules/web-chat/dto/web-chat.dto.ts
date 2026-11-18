@@ -11,6 +11,10 @@ export class WebChatHistoryMessageDto {
 }
 
 export class WebChatDto {
+  @IsOptional()
+  @IsIn(['enterprise', 'general'])
+  mode?: 'enterprise' | 'general';
+
   @IsString()
   @MinLength(2)
   @MaxLength(12000)

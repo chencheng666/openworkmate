@@ -10,7 +10,7 @@ for(const file of readdirSync(dir).filter(f=>/^[0-9a-f]{12}\.json$/.test(f))){
     await page.goto('/');await page.getByRole('button',{name:'工作台工具',exact:true}).click();
     const d=page.getByRole('dialog');await d.getByRole('combobox').selectOption(file.slice(0,12));
     for(const c of spec.cases){
-      for(const f of spec.fields)await d.getByLabel(f.label,{exact:true}).fill(c.values[f.id]||'');
+      for(const f of spec.fields)await d.getByRole('textbox',{name:f.label,exact:true}).fill(c.values[f.id]||'');
       await d.getByRole('button',{name:spec.actions.find(a=>a.id===c.action)!.label,exact:true}).click();
       await expect.poll(async()=>await d.getByTestId('feature-result').textContent({timeout:6000})).toBe(c.expect);
     }

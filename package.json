@@ -14,6 +14,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "upgrade:lab": "node scripts/upgrade/lab.mjs",
+    "upgrade:accept": "node scripts/upgrade/lab.mjs accept",
     "dev": "pnpm -r --parallel run dev",
     "desktop": "node scripts/desktop.mjs",
     "start": "pnpm --dir backend start:platform",

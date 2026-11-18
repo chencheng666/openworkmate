@@ -1,5 +1,9 @@
 # OpenWorkMate
 
+[本地升级实验台](docs/local-upgrade.md)：在对话里提需求，试用独立分支，确认后手动合并。
+
+<!-- upgrade:formats -->
+
 企业内部的 AI 工作伙伴。员工对话与管理后台共用一个 Web 服务。安装与部署见 [项目首页](README.md)。
 
 支持按企业定制品牌、真实模型混合检索及图表导出。[本地配置与桌面端边界](docs/local-workspace.md)。

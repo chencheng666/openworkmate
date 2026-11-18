@@ -178,6 +178,13 @@ export function App() {
     setStatusText('正在检索企业知识库…');
 
     try {
+      if (/^(?:\/升级(?:\s|$)|升级[：:])/.test(message)) {
+        if(location.hostname!=='127.0.0.1' && location.hostname!=='localhost') throw new Error('源码升级只在维护者本机开放。');
+        const request=message.replace(/^(?:\/升级|升级[：:])\s*/,'');
+        const url='http://127.0.0.1:18794/#request='+encodeURIComponent(request);
+        updateActiveSession(s=>({...s,messages:[...s.messages,{id:crypto.randomUUID(),role:'assistant',content:'[在本地升级对话中确认需求]('+url+')。提交后会创建独立分支、运行测试并提供试用地址。不会自动合并。'}]}));
+        setStatusText('升级需求未发送到知识库');return;
+      }
       const response = await fetch(`${WEB_API_BASE}/web-chat`, {
         method: 'POST',
         headers: {

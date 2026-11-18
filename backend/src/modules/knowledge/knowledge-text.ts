@@ -112,7 +112,7 @@ export function rankKnowledgeChunks<T extends { content: string }>(
         : 0;
       return { ...chunk, keywordScore, vectorScore, highlights };
     });
-  const maxKeyword = Math.max(1, ...keywordRanked.map((chunk) => chunk.keywordScore));
+  const maxKeyword = keywordRanked.reduce((max, chunk) => Math.max(max, chunk.keywordScore), 1);
   return keywordRanked
     .map((chunk) => ({
       ...chunk,

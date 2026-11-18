@@ -10,12 +10,14 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { OperationDemoModule } from './modules/operation-demo/operation-demo.module';
 import { SkillFactoryModule } from './modules/skill-factory/skill-factory.module';
 import { WebChatModule } from './modules/web-chat/web-chat.module';
+import { BrandingModule } from './modules/branding/branding.module';
+import { ResultsModule } from './modules/results/results.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env.openai.local', '.env.local', '.env'],
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -24,6 +26,8 @@ import { WebChatModule } from './modules/web-chat/web-chat.module';
       }),
     }),
     HealthModule,
+    BrandingModule,
+    ResultsModule,
     AuthModule,
     AuditModule,
     ConnectorsModule,

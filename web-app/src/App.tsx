@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { defaultBrand, useBrandAppearance } from '../../ui/branding';
 import {
   BookOpen,
   ChevronRight,
@@ -49,9 +50,9 @@ const quickPrompts = [
   { title: '运营洞察', text: '帮我梳理园区工单超时的主要原因和改进建议', icon: Search },
 ];
 
-const WEB_API_BASE = (import.meta.env.VITE_WEB_API_BASE || '/api').replace(/\/$/, '');
+import { apiBase as WEB_API_BASE, native } from './platform';
+const FileResults = lazy(()=>import('./FileResults'));
 const MarkdownAnswer = lazy(() => import('./MarkdownAnswer'));
-const brandIcon = '/brand/logo.svg';
 
 function createSession(): Session {
   return { id: crypto.randomUUID(), title: '新对话', updatedAt: Date.now(), messages: [] };
@@ -92,6 +93,7 @@ export function App() {
   const [sessions, setSessions] = useState<Session[]>([initialSession]);
   const [activeId, setActiveId] = useState(initialSession.id);
   const [draft, setDraft] = useState('');
+  const [fileSource, setFileSource] = useState<string|null>(null);
   const [sending, setSending] = useState(false);
   const [statusText, setStatusText] = useState('正在连接服务…');
   const [userName, setUserName] = useState(getUserName());
@@ -102,6 +104,19 @@ export function App() {
   const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [canManage, setCanManage] = useState(false);
   const [hasSession, setHasSession] = useState(false);
+  const [brand, setBrand] = useState(defaultBrand);
+  const sessionToken = getAccessToken();
+  const brandIcon = brand.logo || '/brand/logo.svg';
+  useBrandAppearance(brand, '/');
+  useEffect(() => {
+    setBrand(defaultBrand);
+    if (!hasSession) return;
+    const controller = new AbortController();
+    fetch(WEB_API_BASE + '/branding', { credentials: 'include', headers: getIdentityHeaders(), signal: controller.signal })
+      .then(async res => { if (res.ok) { const value = await res.json(); if (!controller.signal.aborted) setBrand(value); } })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [hasSession, sessionToken]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyToggle = useRef<HTMLButtonElement>(null);
   const historyClose = useRef<HTMLButtonElement>(null);
@@ -137,6 +152,15 @@ export function App() {
     setSessions((current) => current.map((session) => session.id === activeId ? updater(session) : session));
   };
 
+  const clearConversations = () => {
+    setFileSource(null);
+    const next = createSession();
+    setSessions([next]);
+    setActiveId(next.id);
+    setDraft('');
+    setHistoryOpen(false);
+  };
+
   const sendMessage = async (text = draft) => {
     const message = text.trim();
     if (!message || sending || !activeSession) return;
@@ -169,6 +193,7 @@ export function App() {
       const payload = await response.json() as { answer?: string; citations?: Citation[]; message?: string };
       if (response.status === 401) {
         clearAuthSession();
+        clearConversations();
         setUserName('企业员工');
         setHasSession(false);
         setCanManage(false);
@@ -217,6 +242,7 @@ export function App() {
     setLoginError('');
     try {
       await devLogin({ userId: loginId.trim(), userName: userName.trim() || '企业员工' });
+      clearConversations();
       setUserName(getUserName());
       setHasSession(true);
       setCanManage(false);
@@ -231,6 +257,7 @@ export function App() {
 
   const logout = () => {
     void logoutSession();
+    clearConversations();
     setUserName('企业员工');
     setStatusText('已退出登录');
     setHasSession(false);
@@ -254,7 +281,7 @@ export function App() {
       <aside className={`web-sidebar ${historyOpen ? 'is-open' : ''}`} id="chat-sidebar" aria-label="对话列表" onKeyDown={(event) => { if (event.key === 'Escape') closeHistory(); }}>
         <div className="brand-block">
           <img className="brand-logo" src={brandIcon} alt="" />
-          <strong>OpenWorkMate</strong>
+          <strong title={brand.name}>{brand.name}</strong>
           <button ref={historyClose} className="sidebar-close" type="button" onClick={closeHistory} aria-label="收起对话列表"><X size={18} /></button>
         </div>
         <button className="new-chat-button" onClick={startNewChat}>
@@ -277,7 +304,8 @@ export function App() {
           <strong className="topbar-title">工作助手</strong>
           <div className="topbar-spacer" />
           <div className="connection-state" role="status">{statusText}</div>
-          {canManage && <a className="user-chip" href="/admin/">管理后台</a>}
+          <button className="user-chip" onClick={()=>setFileSource('')}>文件结果</button>
+          {canManage && !native && <a className="user-chip" href="/admin/">管理后台</a>}
           <button className="user-chip user-name" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} /><span>{hasSession ? userName : '登录'}</span></button>
         </header>
 
@@ -309,8 +337,12 @@ export function App() {
                         </div>
                       )) : message.content}
                     </div>
+                    {message.role === 'assistant' && !message.pending && <button className="answer-export" onClick={()=>setFileSource(message.content)}>生成文件…</button>}
+                    {message.role === 'assistant' && !message.pending && <button className="answer-export" type="button" onClick={() => {
+                      void import('./MarkdownAnswer').then(({ downloadText }) => downloadText('工作台回答.md', message.content, 'text/markdown;charset=utf-8'));
+                    }}>下载 Markdown</button>}
                     {message.citations && message.citations.length > 0 && (
-                      <div className="citations"><span><BookOpen size={13} /> 知识库引用</span>{message.citations.slice(0, 3).map((citation, index) => <small key={`${citation.title}-${index}`}>{index + 1}. {citation.title}{citation.category ? ` / ${citation.category}` : ''}{typeof citation.metadata?.pages === 'number' ? ` · 共 ${citation.metadata.pages} 页` : ''}{typeof citation.metadata?.sheets === 'number' ? ` · ${citation.metadata.sheets} 个工作表` : ''}</small>)}</div>
+                      <div className="citations"><span><BookOpen size={13} /> 检索到的参考资料</span>{message.citations.slice(0, 3).map((citation, index) => <details key={`${citation.title}-${index}`}><summary>{index + 1}. {citation.title}{citation.category ? ` / ${citation.category}` : ''}</summary><p>{citation.snippet || '此次检索未返回原文片段。'}</p></details>)}</div>
                     )}
                   </div>
                 </article>
@@ -328,9 +360,10 @@ export function App() {
           {authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
         </div>
       </main>
+      {fileSource!==null && <Suspense fallback={<span role="status">正在打开文件结果…</span>}><FileResults source={fileSource} close={()=>setFileSource(null)} /></Suspense>}
       {loginOpen && <div className="auth-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLoginOpen(false); }}>
         <form className="auth-card" onSubmit={(event) => void submitLogin(event)}>
-          <div className="auth-card-heading"><strong>登录 OpenWorkMate</strong><button type="button" className="auth-close" aria-label="关闭登录弹窗" onClick={() => setLoginOpen(false)}><X size={19} /></button></div>
+          <div className="auth-card-heading"><strong>登录 {brand.name}</strong><button type="button" className="auth-close" aria-label="关闭登录弹窗" onClick={() => setLoginOpen(false)}><X size={19} /></button></div>
           {authConfig?.oidcEnabled && <button type="button" className="auth-submit" onClick={() => void beginSsoLogin()}>使用企业统一 SSO 登录</button>}
           {authConfig?.devLoginEnabled && !authConfig.oidcEnabled && <>
             <label>用户编号<input value={loginId} onChange={(event) => setLoginId(event.target.value)} required /></label>

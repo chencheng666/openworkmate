@@ -9,6 +9,7 @@ import type {
   VisibilityRule,
 } from './types';
 import { getAccessToken } from './auth-session';
+import type { Brand } from '../../ui/branding';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -33,6 +34,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const adminApi = {
+  branding: {
+    read: () => request<Brand>('/branding'),
+    save: (brand: Brand) => request<Brand>('/branding', { method: 'PUT', body: JSON.stringify(brand) }),
+  },
   knowledge: {
     list: () => request<KnowledgeDocument[]>('/knowledge/documents'),
     get: (id: string) => request<KnowledgeDetail>(`/knowledge/documents/${id}`),

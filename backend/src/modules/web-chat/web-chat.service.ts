@@ -45,7 +45,7 @@ export class WebChatService {
       .join('\n\n');
 
     const systemPrompt = [
-      '你是 OpenWorkMate，服务企业内部员工。',
+      '你是企业内部员工的工作助手。',
       '只围绕企业园区运营、企业服务、招商、OA、工单、CRM、合同、BI 和企业制度回答。',
       '回答必须严格区分三类依据：',
       '1. 制度原文：只能陈述知识库片段明确写出的规则，并标注文档名称和章节。',
@@ -53,6 +53,7 @@ export class WebChatService {
       '3. 知识库未规定：资料没有写明的金额、处罚、时限、责任认定或例外，必须明确写“知识库未规定”，不得自行编造。',
       '资料不足时先说明知识库未查到，再给通用建议，并明确通用建议不是企业制度口径。',
       '回答专业、简洁、中文优先，先给结论，再给依据和下一步。',
+      '可用 Markdown 表格整理数据，注明来自用户还是企业资料。没有已生成的文件时，不得虚构图片、视频、附件或下载地址。',
     ].join('\n');
 
     const knowledgePrompt = [
@@ -82,13 +83,14 @@ export class WebChatService {
       { role: 'user', content: `${dto.message}\n\n${knowledgePrompt}` },
     ];
 
-    const apiKey = await this.resolveApiKey();
+    const openai = this.config.get<string>('CHAT_PROVIDER') === 'openai';
+    const apiKey = this.config.get<string>(openai ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY')?.trim();
     if (!apiKey) {
-      throw new ServiceUnavailableException('Web 对话尚未配置 DeepSeek 服务端密钥。');
+      throw new ServiceUnavailableException('Web 对话尚未配置所选模型的服务端密钥。');
     }
 
-    const baseUrl = (this.config.get<string>('DEEPSEEK_BASE_URL') ?? 'https://api.deepseek.com/v1').replace(/\/$/, '');
-    const model = this.config.get<string>('DEEPSEEK_MODEL') ?? 'deepseek-chat';
+    const baseUrl = openai ? 'https://api.openai.com/v1' : (this.config.get<string>('DEEPSEEK_BASE_URL') ?? 'https://api.deepseek.com/v1').replace(/\/$/, '');
+    const model = openai ? this.config.get<string>('OPENAI_CHAT_MODEL') || 'gpt-4.1-mini' : this.config.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90_000);
 
@@ -105,17 +107,14 @@ export class WebChatService {
         body: JSON.stringify({
           model,
           messages,
-          temperature: 0.2,
-          max_tokens: 1800,
+          ...(openai ? { max_completion_tokens: 1800 } : { temperature: 0.2, max_tokens: 1800 }),
           ...(skillTools.length > 0 ? { tools: skillTools, tool_choice: 'auto' } : {}),
         }),
         signal: controller.signal,
         });
         const payload = await response.json().catch(() => null) as DeepSeekResponse | { error?: { message?: string } } | null;
         if (!response.ok) {
-          const message = payload && 'error' in payload && payload.error?.message
-            ? payload.error.message
-            : `DeepSeek 请求失败（HTTP ${response.status}）`;
+          const message = `模型请求失败（HTTP ${response.status}），请检查后台模型权限、额度与可用地区。`;
           throw new BadGatewayException(message);
         }
 
@@ -149,7 +148,7 @@ export class WebChatService {
           messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
         }
       }
-      if (!answer) throw new BadGatewayException('DeepSeek 未返回有效回答。');
+      if (!answer) throw new BadGatewayException('模型未返回有效回答。');
 
       return {
         sessionId: dto.sessionId || randomUUID(),
@@ -172,7 +171,4 @@ export class WebChatService {
     }
   }
 
-  private async resolveApiKey(): Promise<string | undefined> {
-    return this.config.get<string>('DEEPSEEK_API_KEY')?.trim() || undefined;
-  }
 }

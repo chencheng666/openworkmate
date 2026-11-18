@@ -42,7 +42,7 @@ async function bootstrap() {
   const corsOrigin = config.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173,http://localhost:5174,http://localhost:5180';
 
   app.enableCors({
-    origin: corsOrigin.split(',').map((origin) => origin.trim()),
+    origin: [...corsOrigin.split(',').map((origin) => origin.trim()), ...(hostAllowsLocalDesktop(config) ? ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'] : [])],
     credentials: true,
   });
   app.setGlobalPrefix('api');
@@ -71,3 +71,7 @@ async function bootstrap() {
 }
 
 void bootstrap();
+
+function hostAllowsLocalDesktop(config: ConfigService) {
+  return ['127.0.0.1','localhost','::1'].includes(config.get<string>('HOST') || '127.0.0.1');
+}

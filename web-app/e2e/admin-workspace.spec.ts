@@ -58,3 +58,21 @@ test('连接器只填两项即可创建只读草稿', async ({ page }) => {
   });
   await expect(form).toHaveCount(0);
 });
+
+test('企业外观先预览再保存，重新进入员工端后共用品牌', async ({ page }) => {
+  let brand = { name: 'OpenWorkMate', logo: '', theme: 'ocean' };
+  await page.route('**/api/branding', async route => {
+    if (route.request().method() === 'PUT') brand = route.request().postDataJSON();
+    await route.fulfill({ json: brand });
+  });
+  await page.goto('/admin/branding');
+  await page.getByLabel('工作台名称').fill('星海工作台');
+  await page.getByLabel('星云紫').check();
+  await expect(page.getByLabel('员工端外观预览')).toContainText('星海工作台');
+  await expect(page.locator('.brand-row strong')).toHaveText('OpenWorkMate');
+  await page.getByRole('button', { name: '保存外观' }).click();
+  await expect(page.locator('.brand-row strong')).toHaveText('星海工作台');
+  await page.getByRole('link', { name: '员工对话' }).click();
+  await expect(page).toHaveTitle('星海工作台');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'violet');
+});

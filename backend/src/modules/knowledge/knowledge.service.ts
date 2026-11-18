@@ -319,17 +319,21 @@ export class KnowledgeService {
     };
     if (dto.categories?.length) query.category = { $in: dto.categories };
 
-    const documents = await this.documentModel.find(query).lean();
+    const documents = await this.documentModel.find(query).select('title category summary').lean();
     const documentIds = documents.map((document) => document._id);
     const documentById = new Map(documents.map((document) => [String(document._id), document]));
-    const chunks = documentIds.length
-      ? await this.chunkModel.find({
-        tenantId: ctx.tenantId,
-        documentId: { $in: documentIds },
-      }).lean()
-      : [];
-
-    const queryEmbedding = await this.embedding.embed(dto.query).then((vectors) => vectors?.[0] ?? null);
+    const filter = { tenantId: ctx.tenantId, documentId: { $in: documentIds } };
+    const modelId = this.embedding.modelId;
+    const vectorReady = !!(documentIds.length && this.embedding.isConfigured() &&
+      await this.chunkModel.exists({ ...filter, embeddingModel: modelId }));
+    let queryEmbedding: number[] | null = null;
+    let degraded = false;
+    if (vectorReady) {
+      try { queryEmbedding = (await this.embedding.embed(dto.query))?.[0] ?? null; }
+      catch { degraded = true; }
+    }
+    const chunks = documentIds.length ? await this.chunkModel.find(filter)
+      .select('documentId chunkIndex content metadata' + (queryEmbedding ? ' embedding embeddingModel' : '')).lean() : [];
     const rankedChunks = rankKnowledgeChunks(
       dto.query,
       chunks.map((chunk) => {
@@ -342,7 +346,7 @@ export class KnowledgeService {
           title: document?.title,
           category: document?.category,
           summary: document?.summary,
-          embedding: chunk.embedding,
+          embedding: chunk.embeddingModel === modelId ? chunk.embedding : undefined,
           metadata: chunk.metadata,
         };
       }),
@@ -366,13 +370,11 @@ export class KnowledgeService {
       query: dto.query,
       answerDraft: buildAnswerDraft({ query: dto.query, rankedChunks }),
       retrieval: {
-        mode: queryEmbedding && rankedChunks.some((chunk) => Array.isArray(chunk.embedding) && chunk.embedding.length > 0)
+        mode: queryEmbedding && rankedChunks.some((chunk) => chunk.embedding?.length === queryEmbedding!.length)
           ? 'hybrid-keyword-vector'
           : 'keyword-bigram',
-        vectorReady: rankedChunks.some((chunk) => {
-          const embedding = (chunk as { embedding?: number[] }).embedding;
-          return Array.isArray(embedding) && embedding.length > 0;
-        }),
+        vectorReady,
+        degraded,
         confidence: rankedChunks.length === 0 ? 'none' : rankedChunks[0].score >= 12 ? 'high' : rankedChunks[0].score >= 5 ? 'medium' : 'low',
       },
       citations: rankedChunks.map((chunk) => ({
@@ -519,6 +521,7 @@ export class KnowledgeService {
       chunkIndex: chunk.chunkIndex,
       content: chunk.content,
       embedding: embeddings?.[chunk.chunkIndex] ?? [],
+      embeddingModel: embeddings ? this.embedding.modelId : undefined,
       metadata: chunk.metadata,
     })));
     await this.chunkModel.deleteMany({

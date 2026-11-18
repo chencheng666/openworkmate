@@ -82,6 +82,8 @@ src/extensions/_ext-bridge.generated.ts
 .electron-cache/
 .electron-builder-cache/
 outputs/
+desktop/target/
+desktop/gen/
 *.db
 *.sqlite
 *.sqlite3

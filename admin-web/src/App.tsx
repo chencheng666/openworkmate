@@ -6,6 +6,7 @@ import { devLogin, getAuthConfig, getSession, logout, startOidcLogin, type AuthC
 import { LoadingBlock } from './components/Feedback';
 
 const AuditPage = lazy(() => import('./pages/AuditPage').then(({ AuditPage }) => ({ default: AuditPage })));
+const BrandingPage = lazy(() => import('./pages/BrandingPage'));
 const ConnectorsPage = lazy(() => import('./pages/ConnectorsPage').then(({ ConnectorsPage }) => ({ default: ConnectorsPage })));
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage').then(({ KnowledgePage }) => ({ default: KnowledgePage })));
 const SkillsPage = lazy(() => import('./pages/SkillsPage').then(({ SkillsPage }) => ({ default: SkillsPage })));
@@ -56,8 +57,9 @@ export function App() {
   return (
     <AuthGate>{(session) => (
       <Routes>
-        <Route element={<AdminLayout accountName={session.context?.userName ?? '平台管理员'} />}>
+        <Route element={<AdminLayout accountName={session.context?.userName ?? '平台管理员'} canBrand={!!session.context?.roleIds?.includes('platform-admin')} />}>
           <Route index element={<OverviewPage />} />
+          {session.context?.roleIds?.includes('platform-admin') && <Route path="branding" element={<Suspense fallback={<LoadingBlock />}><BrandingPage /></Suspense>} />}
           <Route path="knowledge" element={<Suspense fallback={<LoadingBlock />}><KnowledgePage /></Suspense>} />
           <Route path="skills" element={<Suspense fallback={<LoadingBlock />}><SkillsPage /></Suspense>} />
           <Route path="connectors" element={<Suspense fallback={<LoadingBlock />}><ConnectorsPage /></Suspense>} />

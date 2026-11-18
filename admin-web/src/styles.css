@@ -82,6 +82,26 @@ body { min-height: 100vh; font-size: 14px; }
   background: linear-gradient(114deg, #132341 10%, #203961 100%);
 }
 .workspace-heading h1 { margin-bottom: 8px; color: #f2f7ff; }
+.workspace-heading { background: linear-gradient(115deg, var(--sidebar), var(--sidebar-hover)); }
+.brand-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .85fr); gap: 20px; align-items: start; max-width: 1100px; }
+.brand-form, .preview-body { padding: clamp(16px, 3vw, 30px); }
+.brand-form fieldset { min-width: 0; border: 0; margin: 0; padding: 0; display: grid; gap: 18px; }
+.brand-form label { display: grid; gap: 7px; font-weight: 600; }
+.brand-form input:not([type="radio"]) { min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 7px; }
+.brand-form small, .preview-body p { color: var(--muted); }
+.brand-form .palette-options, .brand-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.palette-options legend { margin-bottom: 8px; font-weight: 600; }
+.palette-options label { display: inline-flex; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.palette-options label:has(:checked) { border-color: var(--primary); background: var(--primary-soft); }
+.palette-options input { accent-color: var(--primary); }
+.palette-options i { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+.brand-form [role="status"]:not(:empty) { display: block; margin-top: 12px; }
+.brand-preview { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; gap: 10px; padding: 16px; background: var(--sidebar); color: white; overflow-wrap: anywhere; }
+.preview-body { background: linear-gradient(155deg, var(--primary-soft), white 80%); }
+.preview-body small { color: var(--primary); font-weight: 650; }
+.preview-body span { display: inline-block; background: var(--primary); color: white; border-radius: 7px; padding: 8px 12px; }
+@media (max-width: 850px) { .brand-grid { grid-template-columns: minmax(0, 1fr); } }
 .workspace-heading p { color: #c0d3ee; }
 .governance-tasks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .governance-tasks a {

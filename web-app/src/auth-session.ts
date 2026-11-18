@@ -2,7 +2,7 @@ const TOKEN_KEY = 'workmate-access-token';
 const USER_ID_KEY = 'workmate-web-user';
 const USER_NAME_KEY = 'workmate-web-user-name';
 
-const API_BASE = (import.meta.env.VITE_WEB_API_BASE || '/api').replace(/\/$/, '');
+import { apiBase as API_BASE } from './platform';
 
 export type AuthConfig = { oidcEnabled: boolean; oidcLoginUrl?: string; devLoginEnabled: boolean; demoMode: boolean };
 

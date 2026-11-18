@@ -87,11 +87,15 @@ export class KnowledgeChunk {
   @Prop({ type: [Number], default: [] })
   embedding!: number[];
 
+  @Prop()
+  embeddingModel?: string;
+
   @Prop({ type: Object, default: {} })
   metadata!: Record<string, unknown>;
 }
 
 export const KnowledgeChunkSchema = SchemaFactory.createForClass(KnowledgeChunk);
+KnowledgeChunkSchema.index({ tenantId: 1, documentId: 1, embeddingModel: 1 });
 
 @Schema({ timestamps: true, collection: 'knowledge_ingestion_runs' })
 export class KnowledgeIngestionRun {

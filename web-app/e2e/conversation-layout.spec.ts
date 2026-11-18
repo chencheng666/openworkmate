@@ -43,6 +43,7 @@ test('长回答在消息区滚动，输入框保持可见并展示依据类型',
         citations: [{ title: '企业园区报修工单管理制度（试行）', category: '制度文件' }],
       }),
     });
+  });
 
     await page.goto('/');
     await page.getByPlaceholder('描述你要处理的企业业务…').fill('园区报修超过 24 小时未响应怎么办？');
@@ -66,7 +67,27 @@ test('长回答在消息区滚动，输入框保持可见并展示依据类型',
     });
 
     expect(layout).toEqual({ bodyScrollable: false, conversationScrollable: true, composerVisible: true });
-  });
+});
+
+test('回答中的媒体需点开，表格和原文可下载', async ({ page }) => {
+  await page.route('**/api/web-chat', route => route.fulfill({ json: {
+    answer: '| 项目 | 数值 |\n| --- | --- |\n| 工单 | 12 |\n| 审批 | 8 |\n\n![示意图](/brand/logo.svg)\n\n[流程视频](/example.webm)',
+  } }));
+  await page.goto('/');
+  await page.getByRole('textbox', { name: '输入问题' }).fill('出一份演示表格');
+  await page.getByTitle('发送').click();
+  await expect(page.getByRole('cell', { name: '12' })).toBeVisible();
+  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /播放视频/ })).toBeVisible();
+  await page.getByRole('button', { name: /预览图片/ }).click();
+  await expect.poll(() => page.getByAltText('示意图').evaluate(el => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: '生成柱状图' }).click();
+  await expect(page.getByRole('img', { name: '表格数据柱状图' })).toBeVisible();
+  for (const [action, extension] of [['下载 CSV 表格', '.csv'], ['下载 Markdown', '.md'], ['下载 SVG 图表', '.svg']]) {
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: action }).click();
+    expect((await download).suggestedFilename()).toMatch(new RegExp(extension + '$'));
+  }
 });
 
 test('开发环境可以通过登录入口建立 Bearer 会话', async ({ page }) => {

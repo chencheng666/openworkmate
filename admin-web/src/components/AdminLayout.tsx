@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowUpRight, BookOpenText, Boxes, DatabaseZap, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { Activity, ArrowUpRight, BookOpenText, Boxes, DatabaseZap, LayoutDashboard, LogOut, Menu, Palette, X } from 'lucide-react';
+import { defaultBrand, useBrandAppearance, type Brand } from '../../../ui/branding';
+import { adminApi } from '../api';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { logout } from '../auth-session';
 
@@ -9,9 +11,24 @@ const navigation = [
   { to: '/skills', label: 'Skill 管理', icon: Boxes },
   { to: '/connectors', label: '系统接入', icon: DatabaseZap },
   { to: '/audit', label: '审计中心', icon: Activity },
+  { to: '/branding', label: '企业外观', icon: Palette },
 ];
 
-export function AdminLayout({ accountName }: { accountName: string }) {
+export type BrandEditor = { brand: Brand; setBrand: (value: Brand) => void; loaded: boolean; loadError: boolean; retry: () => void };
+
+export function AdminLayout({ accountName, canBrand }: { accountName: string; canBrand: boolean }) {
+  const [brand, setBrand] = useState(defaultBrand);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useBrandAppearance(brand, import.meta.env.BASE_URL, true);
+  useEffect(() => {
+    let active = true;
+    setLoadError(false);
+    adminApi.branding.read().then(value => { if (active) { setBrand(value); setLoaded(true); } })
+      .catch(() => { if (active) setLoadError(true); });
+    return () => { active = false; };
+  }, [attempt]);
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pageTitle = navigation.find((item) => item.to === (location.pathname.replace(/\/$/, '') || '/'))?.label ?? '管理后台';
@@ -38,12 +55,12 @@ export function AdminLayout({ accountName }: { accountName: string }) {
       <aside className={`admin-sidebar ${mobileOpen ? 'is-open' : ''}`} id="admin-sidebar"
         onKeyDown={(event) => { if (event.key === 'Escape') closeMenu(); }}>
         <div className="brand-row">
-          <img className="brand-logo" src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="" />
-          <strong>OpenWorkMate</strong>
+          <img className="brand-logo" src={brand.logo || `${import.meta.env.BASE_URL}brand/logo.svg`} alt="" />
+          <strong title={brand.name}>{brand.name}</strong>
           <button ref={menuClose} className="icon-button mobile-close" onClick={closeMenu} aria-label="收起导航"><X size={18} /></button>
         </div>
         <nav className="admin-navigation" aria-label="管理导航">
-          {navigation.map(({ to, label, icon: Icon }) => (
+          {navigation.filter(item => canBrand || item.to !== '/branding').map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === '/'} onClick={closeMenu}
               className={({ isActive }) => `admin-nav-item ${isActive ? 'is-active' : ''}`}>
               <Icon size={18} />
@@ -61,7 +78,7 @@ export function AdminLayout({ accountName }: { accountName: string }) {
           <span className="account-name">{accountName}</span>
           <button className="button secondary" onClick={() => void signOut()}><LogOut size={15} />退出</button>
         </header>
-        <main className="admin-content"><Outlet /></main>
+        <main className="admin-content"><Outlet context={{ brand, setBrand, loaded, loadError, retry: () => setAttempt(n => n + 1) } satisfies BrandEditor} /></main>
       </div>
     </div>
   );

@@ -27,4 +27,14 @@ button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 2px solid #4274f5; outline-offset: 3px; }
 
-.brand-logo { display: block; width: 34px; height: 34px; flex: 0 0 34px; }
+[data-theme="ocean"] { --primary: #245ce3; --primary-soft: #eef3ff; --sidebar: #101c34; }
+[data-theme="jade"] {
+  --primary: #087468; --primary-dark: #075c53; --primary-soft: #e3f5ef;
+  --sidebar: #102a2b; --sidebar-hover: #1b4040; --sidebar-line: #285051; --signal: #81efd1;
+}
+[data-theme="violet"] {
+  --primary: #6546bf; --primary-dark: #50349d; --primary-soft: #f1edff;
+  --sidebar: #211b35; --sidebar-hover: #393050; --sidebar-line: #483b62; --signal: #c4b4ff;
+}
+.brand-logo { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
+.brand-row strong, .brand-block strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -7,6 +7,7 @@ import { KNOWLEDGE_SEARCH_TOOL_NAME } from '../knowledge/knowledge-tool-declarat
 import { SkillFactoryService } from '../skill-factory/skill-factory.service';
 import { WebChatDto } from './dto/web-chat.dto';
 import { buildDemoAnswer } from './demo-answer';
+import { chatProvider } from './chat-provider';
 import {answerWithTools,ResponsesPermissionError} from './responses-tools';
 
 type DeepSeekMessage = {
@@ -50,7 +51,7 @@ export class WebChatService {
       .join('\n\n');
 
     const systemPrompt = general
-      ? '你是通用问答助手，可以就不同主题直接回答。使用用户的语言；不确定时说明不确定。你没有访问企业资料、业务系统或实时联网检索的能力。'
+      ? '你是通用问答助手，可以就不同主题直接回答。使用用户的语言；不确定时说明不确定。你没有访问企业资料、业务系统或实时联网检索的能力。不要虚构图片或下载链接。如果用户想看图，可以提示输入「找图：主题」或「画：主题」，由独立图片服务处理。'
       : [
       '你是企业内部员工的工作助手。',
       '只围绕企业园区运营、企业服务、招商、OA、工单、CRM、合同、BI 和企业制度回答。',
@@ -90,14 +91,11 @@ export class WebChatService {
       { role: 'user', content: general ? dto.message : `${dto.message}\n\n${knowledgePrompt}` },
     ];
 
-    const openai = this.config.get<string>('CHAT_PROVIDER') === 'openai';
-    const apiKey = this.config.get<string>(openai ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY')?.trim();
+    const { openai, apiKey, baseUrl, model } = chatProvider(this.config);
     if (!apiKey) {
       throw new ServiceUnavailableException('Web 对话尚未配置所选模型的服务端密钥。');
     }
 
-    const baseUrl = openai ? 'https://api.openai.com/v1' : (this.config.get<string>('DEEPSEEK_BASE_URL') ?? 'https://api.deepseek.com/v1').replace(/\/$/, '');
-    const model = openai ? this.config.get<string>('OPENAI_CHAT_MODEL')?.trim() || 'gpt-6.2-sol' : this.config.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90_000);
 

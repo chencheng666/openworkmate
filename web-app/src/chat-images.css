@@ -1,0 +1,14 @@
+.chat-image-gallery {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(195px,100%),1fr));gap:12px;margin-top:12px;max-width:760px}
+.chat-image-card {margin:0;min-width:0;overflow:hidden;border:1px solid var(--border,#d5deea);background:white;border-radius:12px;color:#182944}
+.chat-image-stage {position:relative;display:grid;place-items:center;aspect-ratio:8/5;background:#eef3f8}
+.chat-image-card:only-child .chat-image-stage {max-height:min(40vh,360px);width:100%}
+.chat-image-stage>button {padding:0;border:0;width:100%;height:100%;background:none;cursor:zoom-in}
+.chat-image-stage img {display:block;width:100%;height:100%;max-height:380px;object-fit:contain}
+.chat-image-stage>span {position:absolute;text-align:center;padding:6px;font-size:13px}
+.chat-image-card figcaption {display:grid;gap:4px;padding:10px 12px;font-size:13px;overflow-wrap:anywhere}
+.chat-image-card figcaption small {color:#4a5d76}
+.chat-image-card figcaption button,.chat-image-card figcaption a,.chat-image-stage span button {justify-self:start;padding:2px 0;border:0;background:transparent;color:#194bb7;cursor:pointer;text-decoration:underline}
+.chat-image-dialog {max-width:min(94vw,1100px);max-height:90vh;border:0;border-radius:12px;padding:12px}
+.chat-image-dialog::backdrop {background:#101a2bc9}
+.chat-image-dialog button {display:block;margin:0 0 8px auto;padding:6px 12px;cursor:pointer}
+.chat-image-dialog img {display:block;max-width:100%;max-height:75vh;object-fit:contain}

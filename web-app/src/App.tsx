@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { defaultBrand, useBrandAppearance } from '../../ui/branding';
+import { ChatImages } from './ChatImages';
+import { imageIntent, type ChatImage } from '../../backend/src/modules/web-chat/media/contract';
 import {
   BookOpen,
   ChevronRight,
@@ -26,6 +28,8 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   citations?: Citation[];
+  media?: ChatImage[];
+  retryText?: string;
   pending?: boolean;
 };
 
@@ -53,8 +57,8 @@ const quickPrompts = [
 ];
 const generalPrompts = [
   { title: '学个知识', text: '用一个生活中的例子解释为什么会有月相变化。', icon: BookOpen },
-  { title: '帮我写作', text: '写一段简短的周末读书会邀请，语气自然一点。', icon: FileText },
-  { title: '一起想想', text: '想学一门新语言，每天只有二十分钟，怎么安排第一周？', icon: Search },
+  { title: '找照片', text: '找一张大熊猫的照片', icon: Search },
+  { title: '画插画', text: '画一幅日落时海边灯塔的插画', icon: FileText },
 ];
 
 import { apiBase as WEB_API_BASE, native } from './platform';
@@ -197,7 +201,8 @@ export function App() {
     }));
     setDraft('');
     setSending(true);
-    setStatusText(general ? '正在询问模型…' : '正在检索企业知识库…');
+    const intent = general && imageIntent(message);
+    setStatusText(intent ? (intent.action==='draw'?'正在绘制插画…':'正在搜索公共图库…') : general ? '正在询问模型…' : '正在检索企业知识库…');
 
     try {
       if (!general && /^(?:\/升级(?:\s|$)|升级[：:])/.test(message)) {
@@ -229,7 +234,7 @@ export function App() {
           history: previousHistory.map(({ role, content }) => ({ role, content })),
         }),
       });
-      const payload = await response.json() as { answer?: string; citations?: Citation[]; message?: string };
+      const payload = await response.json() as { answer?: string; citations?: Citation[]; message?: string; media?: ChatImage[] };
       if (response.status === 401) {
         clearAuthSession();
         clearConversations();
@@ -249,6 +254,7 @@ export function App() {
           role: 'assistant',
           content: payload.answer!,
           citations: payload.citations,
+          media: general ? payload.media : undefined,
         }],
       }));
       setStatusText('服务已连接');
@@ -259,9 +265,10 @@ export function App() {
           id: crypto.randomUUID(),
           role: 'assistant',
           content: error instanceof Error ? error.message : '企业智能体暂时无法回答，请稍后重试。',
+          retryText: intent ? message : undefined,
         }],
       }));
-      setStatusText('服务连接需要检查');
+      setStatusText('请求未完成');
     } finally {
       setSending(false);
     }
@@ -354,7 +361,7 @@ export function App() {
             <section className="welcome-panel">
               <img className="welcome-mark" src={brandIcon} alt="" />
               <h1>{general ? '想聊点什么？' : '今天想查什么？'}</h1>
-              <p className="welcome-copy">{general ? '学习、写作，或聊聊你感兴趣的问题。' : '查制度、找流程，或询问已接入的业务。'}</p>
+              <p className="welcome-copy">{general ? '直接提问、找一张照片，或描述想画的插画。' : '查制度、找流程，或询问已接入的业务。'}</p>
               <div className="quick-grid">
                 {(general ? generalPrompts : quickPrompts).map(({ title, text, icon: Icon }) => (
                   <button key={title} className="quick-card" onClick={() => void sendMessage(text)}>
@@ -377,8 +384,10 @@ export function App() {
                         </div>
                       )) : message.content}
                     </div>
-                    {message.role === 'assistant' && !message.pending && <button className="answer-export" onClick={()=>setFileSource(message.content)}>生成文件…</button>}
-                    {message.role === 'assistant' && !message.pending && <button className="answer-export" type="button" onClick={() => {
+                    {!!message.media?.length && <ChatImages images={message.media}/>}
+                    {message.retryText && <button className="answer-export" disabled={sending} onClick={()=>void sendMessage(message.retryText)}>重新发送</button>}
+                    {message.role === 'assistant' && !message.pending && !message.retryText && !message.media?.length && <button className="answer-export" onClick={()=>setFileSource(message.content)}>生成文件…</button>}
+                    {message.role === 'assistant' && !message.pending && !message.retryText && !message.media?.length && <button className="answer-export" type="button" onClick={() => {
                       void import('./MarkdownAnswer').then(({ downloadText }) => downloadText('工作台回答.md', message.content, 'text/markdown;charset=utf-8'));
                     }}>下载 Markdown</button>}
                     {message.citations && message.citations.length > 0 && (
@@ -387,7 +396,7 @@ export function App() {
                   </div>
                 </article>
               ))}
-              {sending && <div className="message-row assistant"><img className="assistant-avatar" src={brandIcon} alt="" /><div className="message-bubble loading-answer" role="status">正在生成回答…</div></div>}
+              {sending && <div className="message-row assistant"><img className="assistant-avatar" src={brandIcon} alt="" /><div className="message-bubble loading-answer" role="status">{statusText}</div></div>}
             </section>
           )}
         </div>
@@ -401,7 +410,7 @@ export function App() {
             <textarea aria-label="输入问题" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={general ? '直接问模型…' : '描述你要处理的企业业务…'} rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendMessage(); } }} />
             <button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送" aria-label="发送"><Send size={18} /></button>
           </form>
-          {general ? <small className="composer-note">{authConfig?.demoMode ? '演示模式未启用真实模型，暂不能使用通用问答。' : '直接询问模型，不读取企业知识库或调用业务工具。'}</small> : /^(?:\/升级|升级[：:])/.test(draft)?<small className="composer-note">升级模式 · 只发送需求给编程模型，请勿粘贴业务资料或密钥。候选不会自动合并。</small>:authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
+          {general ? <small className="composer-note">{authConfig?.demoMode ? '演示模式未启用真实模型，暂不能使用通用问答。' : '不读取企业资料。输入「找图：主题」会搜索公共图库；输入「画：主题」可生成插画。'}</small> : /^(?:\/升级|升级[：:])/.test(draft)?<small className="composer-note">升级模式 · 只发送需求给编程模型，请勿粘贴业务资料或密钥。候选不会自动合并。</small>:authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
         </div>
       </main>
       {fileSource!==null && <Suspense fallback={<span role="status">正在打开文件结果…</span>}><FileResults source={fileSource} close={()=>setFileSource(null)} /></Suspense>}

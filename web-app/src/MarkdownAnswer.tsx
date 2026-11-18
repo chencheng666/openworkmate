@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useEffect, useRef, useState } from 'react';
 import type { Components } from 'react-markdown';
+import { commonsUrl } from '../../backend/src/modules/web-chat/media/contract';
 
 export function downloadText(name: string, content: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -17,7 +18,7 @@ function Media({ src, label, video }: { src?: string; label: string; video?: boo
   let url: URL;
   try { url = new URL(src, location.href); } catch { return <span>{label}</span>; }
   if (!(url.protocol === 'https:' || (url.origin === location.origin && url.protocol === 'http:'))) return <span>{label}</span>;
-  return <span className="answer-media">{show && !failed
+  return <span className="answer-media">{(show || (!video && !!commonsUrl(src))) && !failed
     ? video ? <video controls preload="metadata" src={url.href} aria-label={label} onError={() => setFailed(true)} /> :
       <img src={url.href} alt={label} referrerPolicy="no-referrer" onError={() => setFailed(true)} />
     : failed ? <a href={url.href} target="_blank" rel="noopener noreferrer">预览失败，打开原文件</a> :

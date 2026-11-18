@@ -24,8 +24,14 @@ function meta(r: Omit<Result, 'bytes' | 'content'> & { _id: unknown }) {
   return { id: String(r._id), title: r.title, filename: r.title+'.'+r.format, format: r.format, status: r.status, size: r.size, error: r.error, createdAt: r.createdAt, expiresAt: r.expiresAt };
 }
 @Injectable()
-class ResultQueue implements OnModuleInit, OnModuleDestroy {
+export class ResultQueue implements OnModuleInit, OnModuleDestroy {
   constructor(@InjectModel('FileResult') readonly jobs: Model<Result>) {}
+  async saveIllustration(ctx: RequestContext, subject: string, bytes: Buffer) {
+    if (!bytes.length || bytes.length > 8*1024*1024) throw new BadRequestException('图片超过文件大小限制。');
+    const title = subject.replace(/[^\p{L}\p{N} _-]/gu,' ').trim().slice(0,68) || '插画';
+    return meta(await this.jobs.create({tenantId:ctx.tenantId, userId:ctx.userId, title, format:'png',
+      bytes, size:bytes.length, status:'ready', expiresAt:new Date(Date.now()+7*86400000)}));
+  }
   private timer?: NodeJS.Timeout;
   private busy = false;
   private nextRecovery = 0;
@@ -90,5 +96,5 @@ class ResultsController {
       .header('Content-Disposition',"attachment; filename*=UTF-8''"+encodeURIComponent(meta(job).filename)).type(formats[job.format]).send(Buffer.from(job.bytes));
   }
 }
-@Module({ imports:[MongooseModule.forFeature([{ name:'FileResult',schema }])], providers:[ResultQueue],controllers:[ResultsController] })
+@Module({ imports:[MongooseModule.forFeature([{ name:'FileResult',schema }])], providers:[ResultQueue],controllers:[ResultsController],exports:[ResultQueue] })
 export class ResultsModule {}

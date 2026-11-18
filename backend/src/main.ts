@@ -4,16 +4,17 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { AppModule } from './app.module';
 
 async function mountWeb(app: NestFastifyApplication) {
   const employee = resolve(__dirname, '../../web-app/dist');
   const admin = resolve(__dirname, '../../admin-web/dist');
-  const [employeeHtml, adminHtml] = await Promise.all([
-    readFile(resolve(employee, 'index.html'), 'utf8'),
-    readFile(resolve(admin, 'index.html'), 'utf8'),
+  const employeeEntry = resolve(employee, 'index.html'), adminEntry = resolve(admin, 'index.html');
+  await Promise.all([
+    access(employeeEntry),
+    access(adminEntry),
   ]).catch(() => {
     throw new Error('缺少员工端或管理端构建产物，请先运行 pnpm build。');
   });
@@ -28,9 +29,10 @@ async function mountWeb(app: NestFastifyApplication) {
   }
 
   const server = app.getHttpAdapter().getInstance();
-  server.get('/', (_request, reply) => reply.type('text/html').header('Cache-Control', 'no-cache').send(employeeHtml));
+  // 首页清单跟随当前构建；不要让长时间运行的服务引用已被替换的资源。
+  server.get('/', async (_request, reply) => reply.type('text/html').header('Cache-Control', 'no-cache').send(await readFile(employeeEntry,'utf8')));
   server.get('/admin', (_request, reply) => reply.redirect('/admin/'));
-  server.get('/admin/*', (_request, reply) => reply.type('text/html').header('Cache-Control', 'no-cache').send(adminHtml));
+  server.get('/admin/*', async (_request, reply) => reply.type('text/html').header('Cache-Control', 'no-cache').send(await readFile(adminEntry,'utf8')));
 }
 
 async function bootstrap() {

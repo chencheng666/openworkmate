@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   Menu,
   PanelLeftClose,
-  ShieldCheck,
   X,
 } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
@@ -18,7 +17,7 @@ import { getSession, logout } from '../auth-session';
 import type { PlatformHealth } from '../types';
 
 const navigation = [
-  { to: '/', label: '治理总览', description: '平台运行与治理状态', icon: LayoutDashboard, end: true },
+  { to: '/', label: '工作台', description: '常用管理操作', icon: LayoutDashboard, end: true },
   { to: '/knowledge', label: '知识库', description: '企业知识资产与权限', icon: BookOpenText },
   { to: '/skills', label: 'Skill 管理', description: '提交、审核与发布', icon: Boxes },
   { to: '/connectors', label: '系统接入', description: '内部系统与能力连接', icon: DatabaseZap },
@@ -26,7 +25,7 @@ const navigation = [
 ];
 
 const pageTitles: Record<string, string> = {
-  '/': '治理总览',
+  '/': '工作台',
   '/knowledge': '企业知识库',
   '/skills': 'Skill 管理',
   '/connectors': '系统接入',
@@ -101,15 +100,6 @@ export function AdminLayout() {
         ))}
       </nav>
 
-      <div className="sidebar-boundary">
-        <ShieldCheck size={17} />
-        {!collapsed && (
-          <div>
-            <strong>管理与执行分离</strong>
-            <span>桌面端只执行任务，本后台统一治理平台资产。</span>
-          </div>
-        )}
-      </div>
     </aside>
   );
 
@@ -125,7 +115,7 @@ export function AdminLayout() {
             <Menu size={19} />
           </button>
           <div className="topbar-title">
-            <span>示例企业 · AI 治理平台</span>
+            <span>OpenWorkMate</span>
             <strong>{pageTitles[location.pathname] || '系统管理'}</strong>
           </div>
           <div className="topbar-spacer" />
@@ -140,7 +130,7 @@ export function AdminLayout() {
           </button>
         </header>
         <main className="admin-content">
-          <Outlet context={{ health }} />
+          <Outlet />
         </main>
       </div>
     </div>

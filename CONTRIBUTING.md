@@ -15,16 +15,13 @@
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
-pnpm ext:bridge
-pnpm web:build
-pnpm admin:build
-pnpm --dir backend typecheck
-pnpm --dir backend build
-pnpm test:enterprise
+pnpm build
+pnpm test
+pnpm test:e2e
 pnpm check:public
 ```
 
-Web UI 改动请补充 `web-app/e2e/` 中的测试；桌面 UI 改动请更新 `tests/e2e/`。通信路径改动需运行 `pnpm comms:replay` 和 `pnpm comms:compare`。不要为低影响改动编写只重复实现的测试。
+Web UI 改动请补充 `web-app/e2e/` 中的测试。首次运行端到端测试前用 `pnpm exec playwright install chromium` 安装浏览器。
 
 新代码注释、提交说明、PR 描述优先使用中文，英文讨论同样欢迎。PR 描述请说明用户问题、改动后行为、验证结果与尚存限制。保持改动集中，不把大范围格式化混进功能修复。
 

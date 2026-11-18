@@ -4,7 +4,33 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { AppModule } from './app.module';
+
+async function mountWeb(app: NestFastifyApplication) {
+  const employee = resolve(__dirname, '../../web-app/dist');
+  const admin = resolve(__dirname, '../../admin-web/dist');
+  const [employeeHtml, adminHtml] = await Promise.all([
+    readFile(resolve(employee, 'index.html'), 'utf8'),
+    readFile(resolve(admin, 'index.html'), 'utf8'),
+  ]).catch(() => {
+    throw new Error('缺少员工端或管理端构建产物，请先运行 pnpm build。');
+  });
+
+  for (const [root, prefix] of [
+    [resolve(employee, 'assets'), '/assets/'],
+    [resolve(employee, 'brand'), '/brand/'],
+    [resolve(admin, 'assets'), '/admin/assets/'],
+  ]) {
+    app.useStaticAssets({ root, prefix, decorateReply: false });
+  }
+
+  const server = app.getHttpAdapter().getInstance();
+  server.get('/', (_request, reply) => reply.type('text/html').header('Cache-Control', 'no-cache').send(employeeHtml));
+  server.get('/admin', (_request, reply) => reply.redirect('/admin/'));
+  server.get('/admin/*', (_request, reply) => reply.type('text/html').header('Cache-Control', 'no-cache').send(adminHtml));
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -35,6 +61,8 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
+
+  if (process.argv.includes('--web')) await mountWeb(app);
 
   const port = config.get<number>('PORT') ?? 18790;
   const host = config.get<string>('HOST') ?? '127.0.0.1';

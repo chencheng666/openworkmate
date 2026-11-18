@@ -21,8 +21,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm check:public
-      - run: pnpm test:enterprise
-      - run: pnpm web:build
-      - run: pnpm admin:build
-      - run: pnpm --dir backend typecheck
-      - run: pnpm --dir backend build
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e

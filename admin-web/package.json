@@ -5,7 +5,7 @@
   "type": "module",
   "description": "OpenWorkMate系统管理后台",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 0.0.0.0"
@@ -17,9 +17,11 @@
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
+    "@types/node": "^25.0.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "autoprefixer": "^10.4.24",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   },

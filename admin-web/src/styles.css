@@ -123,6 +123,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .governance-tasks a > span { display: flex; min-width: 0; flex: 1; flex-direction: column; }
 .governance-tasks strong { color: #334b62; font-size: 11px; }
 .governance-tasks small { margin-top: 3px; color: #91a0af; font-size: 9px; }
+.governance-tasks strong { font-size: 14px; }
+.governance-tasks small { color: #61758a; font-size: 12px; }
+.connector-advanced summary { padding: 8px 0; color: #365e80; cursor: pointer; }
+.connector-advanced .form-grid { margin-top: 8px; }
 .capability-steps { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 0; margin-top: 20px; border: 1px solid #e1ebf3; border-radius: 7px; overflow: hidden; }
 .capability-step { min-height: 124px; padding: 16px; border-right: 1px solid #e5edf4; background: #fbfdff; }
 .capability-step:last-child { border-right: 0; }

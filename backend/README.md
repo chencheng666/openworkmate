@@ -66,17 +66,7 @@ http://127.0.0.1:18790/api
 
 独立管理后台位于仓库根目录 `admin-web/`，默认通过 `http://localhost:5174` 访问本服务。生产部署可设置 `HOST=0.0.0.0`，并将 `CORS_ORIGIN` 限制为实际管理后台域名。
 
-Electron 前端通过 Host API 代理访问后端：
-
-```text
-/api/enterprise/* -> http://127.0.0.1:18790/api/*
-```
-
-如需改后端地址，可在启动 Electron 前设置：
-
-```bash
-WORKMATE_BACKEND_URL=http://127.0.0.1:18790/api pnpm dev
-```
+根目录运行 `pnpm dev` 可从 127.0.0.1:5180 同时访问员工端、`/admin/` 和 `/api`。如果更改后端端口，可通过 `WORKMATE_API_TARGET=http://127.0.0.1:<端口>` 指定 Vite 转发目标。运行 `pnpm build && pnpm start` 后，页面、资源和 API 由同一个后端进程提供。
 
 ## 当前模块
 
@@ -303,6 +293,4 @@ x-park-ids: park-beijing-001,park-tianjin-002
 
 1. 将当前 Base64 文件导入升级为对象存储预签名直传。
 2. 将当前 MongoDB 持久队列升级为独立 Worker 集群，并接入 OCR 与向量化服务。
-3. 将 connector capability 转换为 OpenClaw MCP Tool 声明。
-4. 将 installed skill 转换为 OpenClaw 可安装 Skill 或 MCP Tool 声明。
-5. 接入统一身份、权限、数据域和审批中心。
+3. 用实际业务系统验证统一身份、数据权限和审批链路。

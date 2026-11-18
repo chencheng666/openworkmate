@@ -6,9 +6,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:5181',
   },
-  webServer: {
-    command: 'pnpm dev -- --port 5181',
-    url: 'http://127.0.0.1:5181',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    { command: 'pnpm exec vite --port 5181', url: 'http://127.0.0.1:5181', reuseExistingServer: !process.env.CI },
+    { command: 'pnpm --dir ../admin-web dev', url: 'http://127.0.0.1:5174/admin/', reuseExistingServer: !process.env.CI },
+  ],
 });

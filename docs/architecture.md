@@ -2,9 +2,8 @@
 
 ```mermaid
 flowchart TD
-  Employee[员工 Web 对话] --> API[NestJS + Fastify 企业 API]
-  Admin[React 治理后台] --> API
-  Desktop[可选 Electron + OpenClaw] --> API
+  Employee[员工 Web /] --> API[NestJS + Fastify /api]
+  Admin[管理后台 /admin/] --> API
   API --> Auth[身份与可见范围 / JWT + OIDC]
   Auth --> Knowledge[知识检索与引用]
   Auth --> Skill[Skill Runtime]
@@ -17,9 +16,11 @@ flowchart TD
   API --> Model[服务端模型调用]
 ```
 
-## 三个入口，一套企业后端
+## 两个页面入口，同源部署
 
-`web-app/` 是主要员工入口：不要求安装 Electron 或运行 OpenClaw。`admin-web/` 负责知识、Skill、连接器和审计。`backend/` 负责数据、身份、检索、运行时确认与模型调用。桌面客户端保留本地能力，Renderer 仍经 Main 代理访问企业 API。
+`web-app/` 提供员工对话，`admin-web/` 提供管理工作台，两个前端都调用同源 `/api`。生产构建由 `backend/` 同时提供静态资源、页面路由与 API。开发时用 Vite 转发 `/admin` 和 `/api`，保持相同的访问路径。OIDC 会话 Cookie 可在同一域名的两个入口共用。
+
+后端模块共用应用进程，由 MongoDB 保存平台数据和入库队列。文件存储独立配置，默认使用本地目录。
 
 ## 知识流
 

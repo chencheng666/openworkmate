@@ -1,8 +1,8 @@
 # 来源与致谢
 
-OpenWorkMate 基于 [ClawX](https://github.com/ValueCell-ai/ClawX) 的 MIT 许可代码进行企业场景扩展，保留原作者版权与许可证声明。桌面端保留 OpenClaw 运行时，Web 对话和治理后台通过独立企业后端工作。
+OpenWorkMate 的早期版本基于 [ClawX](https://github.com/ValueCell-ai/ClawX) 进行企业场景扩展。现行架构为员工 Web、管理后台和共享后端。保留原作者版权与 MIT 许可证声明。
 
-原始许可证见 [LICENSE](LICENSE)。OpenClaw、React、NestJS、MongoDB 及其他依赖分别遵循其自身许可证；本仓库不重新授权第三方依赖或第三方渠道 Logo。
+原始许可证见 [LICENSE](LICENSE)。React、NestJS、MongoDB 及其他依赖分别遵循其自身许可证。
 
 本次开源整理、品牌中立化、验证和文档编写由维护者与 GPT‑6 协作完成。历史代码还包含上游社区和此前迭代的贡献，这不是从零完全由一个模型生成的项目。
 

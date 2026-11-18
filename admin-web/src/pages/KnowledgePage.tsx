@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Archive,
   BookOpenCheck,
@@ -99,7 +100,14 @@ export function KnowledgePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | KnowledgeStatus>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [uploadOpen, setUploadOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const uploadOpen = params.get('upload') === '1';
+  const setUploadOpen = (open: boolean) => {
+    const next = new URLSearchParams(params);
+    if (open) next.set('upload', '1');
+    else next.delete('upload');
+    setParams(next, { replace: true });
+  };
   const [editOpen, setEditOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResult, setSearchResult] = useState<KnowledgeSearchResult | null>(null);
@@ -222,7 +230,7 @@ export function KnowledgePage() {
       </section>
 
       <section className="panel search-console">
-        <div className="search-console-copy"><FileSearch size={21} /><div><strong>验证知识检索效果</strong><span>使用与桌面端数智员工相同的权限过滤与引用链路。</span></div></div>
+        <div className="search-console-copy"><FileSearch size={21} /><div><strong>验证知识检索效果</strong><span>预览当前身份可检索到的知识片段。</span></div></div>
         <form onSubmit={(event) => { event.preventDefault(); void runSearch(searchQuery); }}>
           <Search size={17} />
           <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="输入问题，例如：园区报修超时后如何升级？" />
@@ -372,7 +380,7 @@ function KnowledgeEditorModal({ mode, document, categories, onClose, onSaved }: 
         ) : (
           <label><span>知识正文 <b>*</b></span><textarea className={`${inputClassName} content-editor`} rows={14} value={content} onChange={(event) => setContent(event.target.value)} placeholder="粘贴制度、流程或业务规则正文..." /></label>
         )}
-        <div className="permission-note"><LockKeyhole size={16} /><span><strong>权限会贯穿检索链路。</strong>桌面端数智员工只能检索当前员工有权访问的知识片段，所有查询均记录审计。</span></div>
+        <div className="permission-note"><LockKeyhole size={16} /><span>员工只会检索到有权访问的知识片段。查询会记录在审计日志中。</span></div>
         <footer className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>取消</button><button className="button primary" disabled={busy}>{busy ? <LoaderCircle className="spin" size={16} /> : <CheckCircle2 size={16} />}{mode === 'create' ? '提交并建立索引' : '保存修改'}</button></footer>
       </form>
     </Modal>

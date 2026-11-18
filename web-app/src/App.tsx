@@ -7,14 +7,13 @@ import {
   FileText,
   LogIn,
   MessageSquarePlus,
-  Paperclip,
   Search,
   Send,
   ShieldCheck,
   Sparkles,
   Waves,
 } from 'lucide-react';
-import { devLogin, getIdentityHeaders, getUserName, clearAuthSession, getAccessToken, consumeAuthCallback, getAuthConfig, getSession, logoutSession, startOidcLogin } from './auth-session';
+import { devLogin, getIdentityHeaders, getUserName, clearAuthSession, getAccessToken, consumeAuthCallback, getAuthConfig, getSession, logoutSession, startOidcLogin, type AuthConfig } from './auth-session';
 
 type Citation = {
   title: string;
@@ -95,20 +94,25 @@ export function App() {
   const [activeId, setActiveId] = useState(initialSession.id);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
-  const [statusText, setStatusText] = useState('企业知识库已连接');
+  const [statusText, setStatusText] = useState('正在连接服务…');
   const [userName, setUserName] = useState(getUserName());
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loginId, setLoginId] = useState(localStorage.getItem('workmate-web-user') || 'web-demo-user');
-  const [authConfig, setAuthConfig] = useState<{ mode: string; oidcEnabled: boolean; oidcLoginUrl?: string; devLoginEnabled: boolean }>({ mode: 'development', oidcEnabled: false, devLoginEnabled: true });
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
+  const [canManage, setCanManage] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    void getAuthConfig().then(setAuthConfig).catch(() => undefined);
+    void getAuthConfig().then(setAuthConfig).catch(() => setStatusText('暂时无法连接服务'));
     void getSession().then((session) => {
       const sessionUserName = session.context?.userName;
       if (session.authenticated && sessionUserName) setUserName(sessionUserName);
-    }).catch(() => undefined);
+      setHasSession(session.authenticated);
+      setCanManage(session.context?.roleIds?.some((role) => role === 'platform-admin' || role === 'business-owner') ?? false);
+      setStatusText(session.authenticated ? '服务已连接' : '请先登录');
+    }).catch((error: Error) => setStatusText(error.message));
   }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -155,6 +159,8 @@ export function App() {
       if (response.status === 401) {
         clearAuthSession();
         setUserName('企业员工');
+        setHasSession(false);
+        setCanManage(false);
         setLoginOpen(true);
         throw new Error('登录已过期，请重新登录后再继续。');
       }
@@ -200,6 +206,8 @@ export function App() {
     try {
       await devLogin({ userId: loginId.trim(), userName: userName.trim() || '企业员工' });
       setUserName(getUserName());
+      setHasSession(true);
+      setCanManage(false);
       setLoginOpen(false);
       setStatusText('已通过登录身份校验');
     } catch (error) {
@@ -212,14 +220,16 @@ export function App() {
   const logout = () => {
     void logoutSession();
     setUserName('企业员工');
-    setStatusText('演示身份');
+    setStatusText('已退出登录');
+    setHasSession(false);
+    setCanManage(false);
     setLoginOpen(false);
   };
 
   const beginSsoLogin = async () => {
     setLoginError('');
     try {
-      if (authConfig.oidcLoginUrl) window.location.assign(authConfig.oidcLoginUrl);
+      if (authConfig?.oidcLoginUrl) window.location.assign(authConfig.oidcLoginUrl);
       else await startOidcLogin();
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : '无法发起统一登录');
@@ -256,7 +266,8 @@ export function App() {
           <div className="topbar-copy"><span>OpenWorkMate</span><strong>企业业务对话</strong></div>
           <div className="topbar-spacer" />
           <div className="connection-state"><i />{statusText}</div>
-          <button className="user-chip" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} />{userName}{getAccessToken() ? '' : '（演示）'}</button>
+          {canManage && <a className="user-chip" href="/admin/">管理后台</a>}
+          <button className="user-chip" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} />{hasSession ? userName : '登录'}</button>
         </header>
 
         <div className="conversation" ref={scrollRef} data-testid="web-conversation" aria-label="对话消息区">
@@ -302,23 +313,23 @@ export function App() {
         <div className="composer-wrap" data-testid="web-composer">
           <form className="composer" onSubmit={(event) => { event.preventDefault(); void sendMessage(); }}>
             <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="描述你要处理的企业业务…" rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} />
-            <div className="composer-actions"><button type="button" className="tool-button" title="附件"><Paperclip size={18} /></button><span>企业知识库 · 组织权限</span><button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送"><Send size={17} /></button></div>
+            <div className="composer-actions"><button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送"><Send size={17} /></button></div>
           </form>
-          <small className="composer-note">{import.meta.env.VITE_DEMO_MODE === 'true' ? '本地演示模式 · 使用示例资料与检索片段，未调用大模型' : '回答由 AI 生成，请结合制度原文和实际业务权限判断。'}</small>
+          {authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
         </div>
       </main>
       {loginOpen && <div className="auth-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLoginOpen(false); }}>
         <form className="auth-card" onSubmit={(event) => void submitLogin(event)}>
           <div className="auth-card-heading"><div><span>OpenWorkMate</span><strong>登录与身份校验</strong></div><button type="button" className="auth-close" onClick={() => setLoginOpen(false)}>×</button></div>
-          <p>{authConfig.oidcEnabled ? '请使用企业统一身份认证登录，平台不会接触您的企业密码。' : '开发环境使用演示登录；生产环境将由企业统一 SSO 签发访问令牌。'}</p>
-          {authConfig.oidcEnabled ? <button type="button" className="auth-submit" onClick={() => void beginSsoLogin()}>使用企业统一 SSO 登录</button> : <>
+          {authConfig?.oidcEnabled && <button type="button" className="auth-submit" onClick={() => void beginSsoLogin()}>使用企业统一 SSO 登录</button>}
+          {authConfig?.devLoginEnabled && !authConfig.oidcEnabled && <>
             <label>用户编号<input value={loginId} onChange={(event) => setLoginId(event.target.value)} required /></label>
             <label>显示姓名<input value={userName} onChange={(event) => setUserName(event.target.value)} required /></label>
-            {loginError && <small className="auth-error">{loginError}</small>}
             <button className="auth-submit" disabled={loginBusy}>{loginBusy ? '校验中…' : '登录'}</button>
           </>}
-          {authConfig.oidcEnabled && loginError && <small className="auth-error">{loginError}</small>}
-          {getAccessToken() && <button type="button" className="auth-logout" onClick={logout}>退出当前登录</button>}
+          {!authConfig?.oidcEnabled && !authConfig?.devLoginEnabled && !hasSession && <p>当前没有可用的登录方式，请联系管理员。</p>}
+          {loginError && <small className="auth-error">{loginError}</small>}
+          {(getAccessToken() || (hasSession && authConfig?.oidcEnabled)) && <button type="button" className="auth-logout" onClick={logout}>退出当前登录</button>}
         </form>
       </div>}
     </div>

@@ -45,7 +45,7 @@ export class WebChatService {
       .join('\n\n');
 
     const systemPrompt = [
-      '你是OpenWorkMate，服务示例企业内部员工。',
+      '你是 OpenWorkMate，服务企业内部员工。',
       '只围绕企业园区运营、企业服务、招商、OA、工单、CRM、合同、BI 和企业制度回答。',
       '回答必须严格区分三类依据：',
       '1. 制度原文：只能陈述知识库片段明确写出的规则，并标注文档名称和章节。',
@@ -56,7 +56,7 @@ export class WebChatService {
     ].join('\n');
 
     const knowledgePrompt = [
-      '[企业企业知识库检索结果]',
+      '[企业知识库检索结果]',
       `摘要：${knowledgeRuntime.result.answerDraft}`,
       evidence ? `引用片段：\n${evidence}` : '引用片段：无',
       '[检索结果结束]',

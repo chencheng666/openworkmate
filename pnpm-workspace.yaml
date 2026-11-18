@@ -5,5 +5,4 @@ packages:
   - 'web-app'
 
 ignoredBuiltDependencies:
-  - electron
   - esbuild

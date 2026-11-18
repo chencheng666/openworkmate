@@ -34,7 +34,7 @@ export class AuthController {
 
   @Get('config')
   config() {
-    return this.oidc.getConfig();
+    return { ...this.oidc.getConfig(), demoMode: process.env.WEB_CHAT_DEMO_MODE === 'true' };
   }
 
   @Get('oidc/start')

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Activity, CheckCircle2, DatabaseZap, HeartPulse, LoaderCircle, Plus, RefreshCw, ServerCog, ShieldCheck } from 'lucide-react';
 import { adminApi, entityId } from '../api';
 import { EmptyBlock, ErrorBanner, LoadingBlock, Modal } from '../components/Feedback';
@@ -10,7 +11,14 @@ export function ConnectorsPage() {
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const createOpen = params.get('create') === '1';
+  const setCreateOpen = (open: boolean) => {
+    const next = new URLSearchParams(params);
+    if (open) next.set('create', '1');
+    else next.delete('create');
+    setParams(next, { replace: true });
+  };
   const [busyId, setBusyId] = useState('');
   const load = useCallback(async () => { setLoading(true); try { setConnectors(await adminApi.connectors.list()); setError(''); } catch (reason) { setError(reason instanceof Error ? reason.message : '连接器加载失败'); } finally { setLoading(false); } }, []);
   useEffect(() => { void load(); }, [load]);
@@ -26,7 +34,78 @@ export function ConnectorsPage() {
 }
 
 function ConnectorCreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => Promise<void> }) {
-  const [key, setKey] = useState(''); const [displayName, setDisplayName] = useState(''); const [type, setType] = useState<Connector['type']>('custom'); const [systemName, setSystemName] = useState(''); const [baseUrl, setBaseUrl] = useState(''); const [authMode, setAuthMode] = useState('none'); const [transport, setTransport] = useState('http'); const [path, setPath] = useState('/api/query'); const [method, setMethod] = useState('GET'); const [apiKeyEnv, setApiKeyEnv] = useState(''); const [owner, setOwner] = useState('信息化中心'); const [domains, setDomains] = useState(''); const [capabilityName, setCapabilityName] = useState('query'); const [capabilityDescription, setCapabilityDescription] = useState('查询业务数据'); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  const submit = async (event: React.FormEvent) => { event.preventDefault(); setBusy(true); setError(''); try { await adminApi.connectors.create({ key, displayName, type, systemName, baseUrl, authMode, status: 'draft', ownerDepartment: owner, dataDomains: domains.split(/[,，\s]+/).filter(Boolean), capabilities: [{ name: capabilityName, description: capabilityDescription, actionKind: 'read', riskLevel: 'low', requiredScopes: [`${key}:read`] }], syncPolicy: { mode: 'manual' }, metadata: { transport, path, method, ...(apiKeyEnv ? { apiKeyEnv } : {}) } }); await onSaved(); } catch (reason) { setError(reason instanceof Error ? reason.message : '创建连接器失败'); } finally { setBusy(false); } };
-  return <Modal title="新建系统连接器" subtitle="登记系统、能力契约和 HTTP 请求元数据；真实密钥只由服务端环境变量提供。" onClose={onClose} wide><form className="knowledge-editor" onSubmit={(event) => void submit(event)}>{error && <ErrorBanner message={error} onClose={() => setError('')} />}<div className="form-grid two-columns"><label><span>连接器 Key</span><input className="form-control" required value={key} onChange={(event) => setKey(event.target.value)} placeholder="oa-main" /></label><label><span>展示名称</span><input className="form-control" required value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="企业 OA" /></label><label><span>系统类型</span><select className="form-control" value={type} onChange={(event) => setType(event.target.value as Connector['type'])}>{Object.entries(typeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label><label><span>系统名称</span><input className="form-control" required value={systemName} onChange={(event) => setSystemName(event.target.value)} /></label><label><span>接口地址</span><input className="form-control" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://internal-api.workmate.cn" /></label><label><span>传输方式</span><select className="form-control" value={transport} onChange={(event) => setTransport(event.target.value)}><option value="http">HTTP</option><option value="mock">Mock（演示）</option></select></label><label><span>认证方式</span><select className="form-control" value={authMode} onChange={(event) => setAuthMode(event.target.value)}>{['none', 'apiKey', 'jwt', 'oauth2', 'sso', 'database'].map((item) => <option value={item} key={item}>{item}</option>)}</select></label><label><span>请求方法</span><select className="form-control" value={method} onChange={(event) => setMethod(event.target.value)}>{['GET', 'POST', 'PUT', 'PATCH'].map((item) => <option value={item} key={item}>{item}</option>)}</select></label><label><span>请求路径</span><input className="form-control" value={path} onChange={(event) => setPath(event.target.value)} placeholder="/api/query" /></label><label><span>密钥环境变量名</span><input className="form-control" value={apiKeyEnv} onChange={(event) => setApiKeyEnv(event.target.value)} placeholder="WORKMATE_OA_API_KEY" /></label><label><span>归属部门</span><input className="form-control" value={owner} onChange={(event) => setOwner(event.target.value)} /></label><label><span>数据域</span><input className="form-control" value={domains} onChange={(event) => setDomains(event.target.value)} placeholder="oa, approval" /></label><label><span>首个能力名称</span><input className="form-control" value={capabilityName} onChange={(event) => setCapabilityName(event.target.value)} /></label><label><span>能力说明</span><input className="form-control" value={capabilityDescription} onChange={(event) => setCapabilityDescription(event.target.value)} /></label></div><div className="permission-note"><ShieldCheck size={16} /><span>连接器创建后默认为草稿。API Key 或 Bearer Token 只填环境变量名，不要把密钥填入浏览器。</span></div><footer className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>取消</button><button className="button primary" disabled={busy}>{busy ? <LoaderCircle className="spin" size={16} /> : <CheckCircle2 size={16} />}创建连接器</button></footer></form></Modal>;
+  const [authMode, setAuthMode] = useState('none');
+  const [generatedKey] = useState(() => 'http-' + crypto.randomUUID().slice(0, 8));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const read = (name: string) => String(fields.get(name) ?? '').trim();
+    const displayName = read('displayName');
+    const key = read('key') || generatedKey;
+    const capability = read('capability') || 'query';
+    setError('');
+    setBusy(true);
+    try {
+      const endpoint = URL.parse(read('endpoint'));
+      if (!endpoint || !['http:', 'https:'].includes(endpoint.protocol) || endpoint.username || endpoint.password || endpoint.hash) {
+        throw new Error('请填写完整的 HTTP 或 HTTPS 查询地址，地址中不能包含凭证或锚点。');
+      }
+      if (!displayName) throw new Error('请填写系统名称。');
+      await adminApi.connectors.create({
+        key,
+        displayName,
+        systemName: displayName,
+        type: read('type'),
+        authMode,
+        baseUrl: endpoint.origin,
+        status: 'draft',
+        ownerDepartment: read('owner') || '信息化中心',
+        dataDomains: read('domains').split(/[,，\s]+/).filter(Boolean),
+        capabilities: [{ name: capability, description: read('description') || ('查询' + displayName), actionKind: 'read', riskLevel: 'low', requiredScopes: [key + ':read'] }],
+        metadata: {
+          transport: 'http',
+          ...(authMode !== 'none' ? { apiKeyEnv: read('credential') } : {}),
+          ...(read('healthPath') ? { healthPath: read('healthPath') } : {}),
+          operations: { [capability]: { path: endpoint.pathname + endpoint.search, method: read('method') } },
+        },
+      });
+      await onSaved();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '创建连接器失败');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="新建系统连接器" subtitle="填写系统名称和查询地址即可创建草稿。" onClose={onClose}>
+      <form className="knowledge-editor" onSubmit={(event) => void submit(event)}>
+        {error && <ErrorBanner message={error} onClose={() => setError('')} />}
+        <label><span>系统名称</span><input className="form-control" name="displayName" required placeholder="例如：企业工单" /></label>
+        <label><span>查询接口地址</span><input className="form-control" name="endpoint" type="url" required placeholder="https://tickets.example.com/api/query" /></label>
+        <details className="connector-advanced" onInvalid={(event) => { event.currentTarget.open = true; }}>
+          <summary>高级配置</summary>
+          <div className="form-grid two-columns">
+            <label><span>系统类型</span><select className="form-control" name="type" defaultValue="custom">{Object.entries(typeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+            <label><span>请求方法</span><select className="form-control" name="method"><option>GET</option><option>POST</option></select></label>
+            <label><span>认证方式</span><select className="form-control" value={authMode} onChange={(event) => setAuthMode(event.target.value)}><option value="none">无</option><option value="apiKey">API Key</option><option value="jwt">Bearer Token</option></select></label>
+            {authMode !== 'none' && <label><span>凭证环境变量名</span><input className="form-control" name="credential" required pattern="[A-Za-z_][A-Za-z0-9_]*" placeholder="TICKETS_API_KEY" /></label>}
+            <label><span>健康检查路径</span><input className="form-control" name="healthPath" placeholder="/health" /></label>
+            <label><span>连接器标识</span><input className="form-control" name="key" placeholder={generatedKey} pattern={'[a-zA-Z0-9_\\-]+'} /></label>
+            <label><span>能力标识</span><input className="form-control" name="capability" placeholder="query" pattern={'[a-zA-Z0-9_\\-]+'} /></label>
+            <label><span>能力说明</span><input className="form-control" name="description" placeholder="查询业务数据" /></label>
+            <label><span>归属部门</span><input className="form-control" name="owner" placeholder="信息化中心" /></label>
+            <label><span>数据域</span><input className="form-control" name="domains" placeholder="工单、客户" /></label>
+          </div>
+        </details>
+        <footer className="modal-footer">
+          <button type="button" className="button secondary" onClick={onClose}>取消</button>
+          <button className="button primary" disabled={busy}>{busy ? <LoaderCircle className="spin" size={16} /> : <CheckCircle2 size={16} />}创建草稿</button>
+        </footer>
+      </form>
+    </Modal>
+  );
 }

@@ -5,10 +5,12 @@
   "description": "Backend API for WorkMate Agent Platform",
   "scripts": {
     "start": "nest start",
+    "start:platform": "node dist/main.js --web",
+    "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "build": "nest build",
     "typecheck": "tsc --noEmit",
-    "seed": "nest build && node dist/seed.js",
+    "seed": "nest build && node --env-file-if-exists=.env --env-file-if-exists=.env.local dist/seed.js",
     "smoke:knowledge": "node scripts/knowledge-smoke.mjs"
   },
   "dependencies": {

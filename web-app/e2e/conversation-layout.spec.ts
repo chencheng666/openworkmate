@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/auth/config', (route) => route.fulfill({
+    json: { devLoginEnabled: true, oidcEnabled: false, demoMode: true },
+  }));
+  await page.route('**/api/auth/me', (route) => route.fulfill({ json: { authenticated: false } }));
+});
+
 test('开源品牌可见，Logo 可加载', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.brand-block strong')).toHaveText('OpenWorkMate');
@@ -53,11 +60,12 @@ test('开发环境可以通过登录入口建立 Bearer 会话', async ({ page }
   });
 
   await page.goto('/');
+  await expect(page.getByText('演示模式 · 回答来自示例知识库的检索结果')).toBeVisible();
   await page.getByTitle('登录与身份设置').click();
   const inputs = page.locator('.auth-card input');
   await inputs.nth(0).fill('user-10086');
   await inputs.nth(1).fill('张三');
-  await page.getByRole('button', { name: '登录' }).click();
+  await page.locator('.auth-card').getByRole('button', { name: '登录', exact: true }).click();
 
   await expect(page.getByRole('button', { name: /张三/ })).toBeVisible();
   await expect(page.getByText('已通过登录身份校验')).toBeVisible();

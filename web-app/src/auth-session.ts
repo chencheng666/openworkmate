@@ -4,6 +4,8 @@ const USER_NAME_KEY = 'workmate-web-user-name';
 
 const API_BASE = (import.meta.env.VITE_WEB_API_BASE || '/api').replace(/\/$/, '');
 
+export type AuthConfig = { oidcEnabled: boolean; oidcLoginUrl?: string; devLoginEnabled: boolean; demoMode: boolean };
+
 export function getAccessToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -20,7 +22,7 @@ export function consumeAuthCallback() {
 export async function getAuthConfig() {
   const response = await fetch(`${API_BASE}/auth/config`, { credentials: 'include' });
   if (!response.ok) throw new Error('无法读取登录配置');
-  return response.json() as Promise<{ mode: string; oidcEnabled: boolean; oidcLoginUrl?: string; devLoginEnabled: boolean }>;
+  return response.json() as Promise<AuthConfig>;
 }
 
 export async function getSession() {
@@ -29,7 +31,7 @@ export async function getSession() {
     credentials: 'include',
   });
   if (!response.ok) throw new Error('当前登录已失效');
-  return response.json() as Promise<{ authenticated: boolean; context?: { userName?: string } }>;
+  return response.json() as Promise<{ authenticated: boolean; context?: { userName?: string; roleIds?: string[] } }>;
 }
 
 export async function logoutSession() {

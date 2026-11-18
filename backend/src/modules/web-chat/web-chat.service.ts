@@ -16,6 +16,7 @@ type DeepSeekMessage = {
 };
 
 type DeepSeekResponse = {
+  model?: string;
   choices?: Array<{ message?: { content?: string; tool_calls?: DeepSeekMessage['tool_calls'] } }>;
 };
 
@@ -95,12 +96,14 @@ export class WebChatService {
     }
 
     const baseUrl = openai ? 'https://api.openai.com/v1' : (this.config.get<string>('DEEPSEEK_BASE_URL') ?? 'https://api.deepseek.com/v1').replace(/\/$/, '');
-    const model = openai ? this.config.get<string>('OPENAI_CHAT_MODEL') || 'gpt-4.1-mini' : this.config.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat';
+    const defaultModel = openai ? this.config.get<string>('OPENAI_CHAT_MODEL') || 'gpt-4.1-mini' : this.config.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat';
+    const model = openai && general ? this.config.get<string>('OPENAI_GENERAL_CHAT_MODEL')?.trim() || defaultModel : defaultModel;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90_000);
 
     try {
       let answer = '';
+      let providerModel: string | undefined;
       const skillExecutions: unknown[] = [];
       for (let round = 0; round < 3; round += 1) {
         const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -123,7 +126,9 @@ export class WebChatService {
           throw new BadGatewayException(message);
         }
 
-        const assistantMessage = payload && 'choices' in payload ? (payload as DeepSeekResponse).choices?.[0]?.message : undefined;
+        const completion = payload && 'choices' in payload ? payload : undefined;
+        providerModel = completion?.model;
+        const assistantMessage = completion?.choices?.[0]?.message;
         const toolCalls = assistantMessage?.tool_calls ?? [];
         if (general && toolCalls.length) throw new BadGatewayException('通用问答不执行业务工具，请重新提问。');
         if (toolCalls.length === 0) {
@@ -165,6 +170,7 @@ export class WebChatService {
         skillExecutions,
         knowledgeHit: citations.length > 0,
         model,
+        providerModel,
         generatedAt: new Date().toISOString(),
       };
     } catch (error) {

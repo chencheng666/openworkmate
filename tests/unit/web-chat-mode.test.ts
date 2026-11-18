@@ -21,3 +21,13 @@ it('演示模式不伪造通用回答，不外发请求',async()=>{
   await expect(chat.chat(ctx,{message:'你好',mode:'general'})).rejects.toThrow('演示模式');
   expect(f).not.toHaveBeenCalled();expect(knowledge.executeTool).not.toHaveBeenCalled();
 });
+it('通用模型覆盖不改变企业问答模型，并区分请求型号与服务端回报型号',async()=>{
+  const config={get:(k:string)=>({CHAT_PROVIDER:'openai',OPENAI_API_KEY:'test',OPENAI_CHAT_MODEL:'gpt-4.1-mini',OPENAI_GENERAL_CHAT_MODEL:'gpt-6.2-sol'}[k])};
+  const chat=new WebChatService(config as never,{executeTool:vi.fn().mockResolvedValue({result:{citations:[]}})} as never,{listRuntimeTools:vi.fn().mockResolvedValue([])} as never);
+  const fetchMock=vi.fn(async(_url:string, init:RequestInit)=>Response.json({model:JSON.parse(String(init.body)).model+'-snapshot',choices:[{message:{content:'测试回复'}}]}));
+  vi.stubGlobal('fetch',fetchMock);
+  for(const [mode,model] of [['general','gpt-6.2-sol'],['enterprise','gpt-4.1-mini']] as const){
+    const r=await chat.chat(ctx,{mode,message:'测试'});
+    expect(r).toMatchObject({model,providerModel:model+'-snapshot'});
+  }
+});

@@ -31,6 +31,8 @@ function step(j,phase,detail) {
   j.phase=phase;j.steps.push(detail);persist(j);console.log(j.id,detail);
 }
 function card(j) {
+  const disk=JSON.parse(readFileSync(join(state,j.id+'.json'),'utf8'));
+  if(disk.phase==='已合并' && j.phase!=='已合并'){Object.assign(j,disk);stop(j);}
   const {id,title,base,sha,branch,target,phase,steps,preview}=j;
   return {id,title,base,sha,branch,target,phase,steps,preview:phase==='待确认'?preview:null};
 }
@@ -69,7 +71,7 @@ async function launch(j) {
   for(let i=0;i<100;i++) {
     if([db,web].some(p=>p.problem||p.exitCode!==null))throw Error('预览服务未启动，请检查本地 mongod 及任务日志。');
     const r=await fetch(j.preview+'/api/health',{signal:AbortSignal.timeout(1500)}).catch(()=>null);
-    if(r?.ok) return;
+    if(r?.ok && (await r.json()).database?.name==='candidate') return;
     await pause(300);
   }
   throw Error('候选服务健康检查超时。');
@@ -129,6 +131,7 @@ if(args[0]==='accept'){
   await git(root,'merge','--ff-only',sha);step(j,'已合并','维护者已明确确认并快进合并。');
 }else {
   const host='127.0.0.1:18794',origin='http://'+host;
+  let reserving=false;
   const server=createServer(async(req,res)=>{
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');
     const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
@@ -156,11 +159,15 @@ if(args[0]==='accept'){
       if(existing)return send(200,card(existing));
       if([...jobs.values()].some(j=>['修改中','验证中','启动中'].includes(j.phase))||children.size>=3)return send(409,{message:'本地执行槽已满，请稍后再试或重启升级服务以释放预览'});
       if(old){void pipeline(old,spec,true);return send(202,card(old));}
+      if(reserving)return send(409,{message:'正在分配工作树，请稍后再试'});
+      reserving=true;
+      try {
       const id=randomUUID().replaceAll('-','').slice(0,12);
       const base=await git(root,'rev-parse','HEAD'),target=await git(root,'branch','--show-current');
       if(!target||await git(root,'status','--porcelain'))return send(409,{message:'基线有未提交改动或处于游离状态，请先整理，再生成候选。'});
       const j={id,title:spec.title,base,target,branch:'codex/upgrade-'+id,dir:join(state,id,'source'),phase:'排队',steps:[]};
       jobs.set(id,j);void pipeline(j,spec);return send(202,card(j));
+      }finally{reserving=false;}
     }catch(e){return send(400,{message:e.message});}
   });
   server.listen(18794,'127.0.0.1',()=>{

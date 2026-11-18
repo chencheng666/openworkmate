@@ -48,7 +48,7 @@ export async function implement(dir, spec) {
     if (job.status !== 'ready' || !job.bytes) throw new ConflictException('文件尚未就绪。');
     const { Workbook } = await import('exceljs');
     const workbook = new Workbook();
-    await workbook.xlsx.load(job.bytes as Parameters<typeof workbook.xlsx.load>[0]);
+    await workbook.xlsx.load(Uint8Array.from(job.bytes).buffer);
     const sheet = workbook.worksheets[0];
     return { rows: Array.from({length: Math.min(sheet.rowCount,100)}, (_,i) =>
       Array.from({length: Math.min(sheet.columnCount,30)}, (_,j) => sheet.getCell(i+1,j+1).text)) };
@@ -67,6 +67,16 @@ export async function implement(dir, spec) {
     ['{csvRows(preview.text).map', "{(active.format==='xlsx'?JSON.parse(preview.text) as string[][]:csvRows(preview.text)).map"],
   ]);
   await change(dir,'desktop/src/main.rs', [['"md" | "csv"', '"md" | "xlsx" | "csv"']]);
+  await writeFile(join(dir,'web-app/e2e/xlsx-preview.spec.ts'), `import {expect,test} from '@playwright/test';
+test('Excel 文件结果展示工作表而非二进制内容',async({page})=>{
+  await page.route('**/api/results',r=>r.fulfill({json:[{id:'sample',format:'xlsx',filename:'工单.xlsx',status:'ready',size:7000}]}));
+  await page.route('**/api/results/sample/preview',r=>r.fulfill({json:{rows:[['编号'],['000123']]}}));
+  await page.goto('/');await page.getByRole('button',{name:'文件结果',exact:true}).click();
+  await page.getByLabel('格式',{exact:true}).selectOption('xlsx');
+  await page.getByRole('button',{name:'预览',exact:true}).click();
+  await expect(page.getByRole('cell',{name:'000123'})).toBeVisible();
+});
+`);
   for (const file of ['README.md','README.zh-CN.md','README.ja-JP.md'])
     await change(dir,file,[['<!-- upgrade:formats -->','<!-- upgrade:formats -->\n\n'+(file.includes('ja-JP')?'ファイル結果は Excel（XLSX）の生成・プレビュー・ダウンロードにも対応しています。':'文件结果支持生成、在线预览及下载 Excel（XLSX）；编号和公式样文本按原文导出。')]]);
   await writeFile(join(dir,'tests/unit/xlsx-result.test.ts'), `import { expect, test } from 'vitest';

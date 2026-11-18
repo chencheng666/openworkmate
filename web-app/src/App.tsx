@@ -52,6 +52,8 @@ const quickPrompts = [
 
 import { apiBase as WEB_API_BASE, native } from './platform';
 const FileResults = lazy(()=>import('./FileResults'));
+const FeaturePanel = lazy(()=>import('./features/FeaturePanel'));
+const hasFeatures=Object.keys(import.meta.glob('./features/generated/*.json')).length>0;
 const MarkdownAnswer = lazy(() => import('./MarkdownAnswer'));
 
 function createSession(): Session {
@@ -94,6 +96,7 @@ export function App() {
   const [activeId, setActiveId] = useState(initialSession.id);
   const [draft, setDraft] = useState('');
   const [fileSource, setFileSource] = useState<string|null>(null);
+  const [showFeatures,setShowFeatures]=useState(false);
   const [sending, setSending] = useState(false);
   const [statusText, setStatusText] = useState('正在连接服务…');
   const [userName, setUserName] = useState(getUserName());
@@ -181,6 +184,13 @@ export function App() {
       if (/^(?:\/升级(?:\s|$)|升级[：:])/.test(message)) {
         if(location.hostname!=='127.0.0.1' && location.hostname!=='localhost') throw new Error('源码升级只在维护者本机开放。');
         const request=message.replace(/^(?:\/升级|升级[：:])\s*/,'');
+        if(['http://127.0.0.1:18790','http://127.0.0.1:5180'].includes(location.origin)){
+          setStatusText('正在提交模型升级需求…');
+          const r=await fetch('http://127.0.0.1:18794/jobs',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json','X-Local-Upgrade':'1'},body:JSON.stringify({request})}).catch(()=>{throw Error('无法连接本地升级服务，请先启动 pnpm upgrade:lab。');});
+          const j=await r.json();if(!r.ok||!/^\w{12}$/.test(j.id))throw Error(j.message||'提交失败');
+          updateActiveSession(s=>({...s,messages:[...s.messages,{id:crypto.randomUUID(),role:'assistant',content:'升级任务已提交。可以[查看生成进度、代码差异和候选预览](http://127.0.0.1:18794/#job-'+j.id+')。只有你明确确认才会合并。'}]}));
+          setStatusText('已提交本地升级任务');return;
+        }
         const url='http://127.0.0.1:18794/#request='+encodeURIComponent(request);
         updateActiveSession(s=>({...s,messages:[...s.messages,{id:crypto.randomUUID(),role:'assistant',content:'[在本地升级对话中确认需求]('+url+')。提交后会创建独立分支、运行测试并提供试用地址。不会自动合并。'}]}));
         setStatusText('升级需求未发送到知识库');return;
@@ -312,6 +322,7 @@ export function App() {
           <div className="topbar-spacer" />
           <div className="connection-state" role="status">{statusText}</div>
           <button className="user-chip" onClick={()=>setFileSource('')}>文件结果</button>
+          {hasFeatures&&<button className="user-chip" onClick={()=>setShowFeatures(true)}>工作台工具</button>}
           {canManage && !native && <a className="user-chip" href="/admin/">管理后台</a>}
           <button className="user-chip user-name" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} /><span>{hasSession ? userName : '登录'}</span></button>
         </header>
@@ -364,10 +375,11 @@ export function App() {
             <textarea aria-label="输入问题" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="描述你要处理的企业业务…" rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendMessage(); } }} />
             <button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送" aria-label="发送"><Send size={18} /></button>
           </form>
-          {authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
+          {/^(?:\/升级|升级[：:])/.test(draft)?<small className="composer-note">升级模式 · 只发送需求给编程模型，请勿粘贴业务资料或密钥。候选不会自动合并。</small>:authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
         </div>
       </main>
       {fileSource!==null && <Suspense fallback={<span role="status">正在打开文件结果…</span>}><FileResults source={fileSource} close={()=>setFileSource(null)} /></Suspense>}
+      {showFeatures&&<Suspense fallback={<span role="status">正在加载工具…</span>}><FeaturePanel close={()=>setShowFeatures(false)}/></Suspense>}
       {loginOpen && <div className="auth-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLoginOpen(false); }}>
         <form className="auth-card" onSubmit={(event) => void submitLogin(event)}>
           <div className="auth-card-heading"><strong>登录 {brand.name}</strong><button type="button" className="auth-close" aria-label="关闭登录弹窗" onClick={() => setLoginOpen(false)}><X size={19} /></button></div>

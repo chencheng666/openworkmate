@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { setTimeout as pause } from 'node:timers/promises';
 import { plan, implement } from './recipes.mjs';
+import {generate,modelRequest} from './model.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const state = join(root,'outputs','upgrade-lab');
@@ -100,9 +101,15 @@ async function pipeline(j,spec,resume=false) {
     if(!resume){
       step(j,'修改中','创建独立 Git 分支及工作树');
       await git(root,'worktree','add','-b',j.branch,j.dir,j.base);
-      await implement(j.dir,spec);
-      await git(j.dir,'diff','--check');
-      await git(j.dir,'add','--all');
+      if(spec.kind==='model'){
+        const id=await generate(root,j,msg=>step(j,'修改中',msg));
+        const prefix='web-app/src/features/generated/'+id;
+        await git(j.dir,'add','--',prefix+'.json',prefix+'.qjs');
+        const changed=(await git(j.dir,'diff','--cached','--name-only')).split('\n');
+        if(changed.some(f=>f!==prefix+'.json'&&f!==prefix+'.qjs')||await git(j.dir,'ls-files','--others','--exclude-standard'))throw Error('改动超出功能源码范围');
+      }else{await implement(j.dir,spec);await git(j.dir,'add','--all');}
+      await git(j.dir,'diff','--cached','--check');
+      if(spec.kind==='model')await cmd(j.dir,process.execPath,[join(root,'scripts/check-public-release.mjs')]);
       await git(j.dir,'commit','-m','候选升级：'+spec.title);
       j.sha=await git(j.dir,'rev-parse','HEAD');
     }else if(await git(j.dir,'rev-parse','HEAD')!==j.sha||await git(j.dir,'status','--porcelain')) throw Error('候选源码已变化，不能恢复。');
@@ -133,12 +140,17 @@ if(args[0]==='accept'){
   await git(root,'merge','--ff-only',sha);step(j,'已合并','维护者已明确确认并快进合并。');
 }else {
   const host='127.0.0.1:18794',origin='http://'+host;
+  const origins=new Set([origin,'http://127.0.0.1:18790','http://127.0.0.1:5180']);
   let reserving=false;
   const server=createServer(async(req,res)=>{
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');
     const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
     try{
       if(req.headers.host!==host)return send(403,{message:'只允许本机地址'});
+      if(req.url==='/jobs'&&origins.has(req.headers.origin)&&['POST','OPTIONS'].includes(req.method)){
+        res.setHeader('Access-Control-Allow-Origin',req.headers.origin);res.setHeader('Vary','Origin');
+        if(req.method==='OPTIONS'){res.setHeader('Access-Control-Allow-Methods','POST');res.setHeader('Access-Control-Allow-Headers','Content-Type, X-Local-Upgrade');res.writeHead(204);return res.end();}
+      }
       if(req.method==='GET' && req.url==='/'){
         res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"});return res.end(readFileSync(new URL('./index.html',import.meta.url)));
       }
@@ -150,13 +162,13 @@ if(args[0]==='accept'){
         res.setHeader('Content-Type','text/plain; charset=utf-8');return res.end(await git(root,'diff',j.base,j.sha));
       }
       if(req.method!=='POST'||req.url!=='/jobs')return send(404,{message:'没有此操作'});
-      if(req.headers.origin!==origin||req.headers['x-local-upgrade']!=='1'||req.headers['content-type']!=='application/json')return send(403,{message:'仅接受本地升级对话的提交'});
-      let body='';for await(const part of req){body+=part;if(body.length>2048)return send(413,{message:'需求过长'});}
-      const {request,resume}=JSON.parse(body);
+      if(!origins.has(req.headers.origin)||req.headers['x-local-upgrade']!=='1'||req.headers['content-type']!=='application/json')return send(403,{message:'仅接受本地升级对话的提交'});
+      const parts=[];let bytes=0;for await(const part of req){bytes+=part.length;if(bytes>4096)return send(413,{message:'需求过长'});parts.push(part);}
+      const {request,resume}=JSON.parse(Buffer.concat(parts).toString());
       if(typeof request!=='string' && !validId(resume))return send(400,{message:'需要升级需求'});
       const old=jobs.get(resume);
       if(resume&&(!old?.sha||!['预览已停止','失败'].includes(old.phase)))return send(409,{message:'当前任务不可恢复'});
-      const spec=plan(old?.title||request);
+      const spec=old?(old.engine==='model'?modelRequest(old.title):plan(old.title)):modelRequest(request);
       const existing=[...jobs.values()].find(j=>j.title===spec.title&&['修改中','验证中','启动中','待确认'].includes(j.phase));
       if(existing)return send(200,card(existing));
       if([...jobs.values()].some(j=>['修改中','验证中','启动中'].includes(j.phase))||children.size>=3)return send(409,{message:'本地执行槽已满，请稍后再试或重启升级服务以释放预览'});
@@ -167,7 +179,7 @@ if(args[0]==='accept'){
       const id=randomUUID().replaceAll('-','').slice(0,12);
       const base=await git(root,'rev-parse','HEAD'),target=await git(root,'branch','--show-current');
       if(!target||await git(root,'status','--porcelain'))return send(409,{message:'基线有未提交改动或处于游离状态，请先整理，再生成候选。'});
-      const j={id,title:spec.title,base,target,branch:'codex/upgrade-'+id,dir:join(state,id,'source'),phase:'排队',steps:[]};
+      const j={id,title:spec.title,engine:spec.kind,base,target,branch:'codex/upgrade-'+id,dir:join(state,id,'source'),phase:'排队',steps:[]};
       jobs.set(id,j);void pipeline(j,spec);return send(202,card(j));
       }finally{reserving=false;}
     }catch(e){return send(400,{message:e.message});}

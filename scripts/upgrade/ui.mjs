@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s), input=$('#request'), list=$('#jobs'), error=$('#error');
-const edit=new URLSearchParams(location.hash.slice(1)).get('request');if(edit)input.value=edit.slice(0,180);
+const edit=new URLSearchParams(location.hash.slice(1)).get('request');if(edit)input.value=edit.slice(0,600);
 const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text});
 const link=(name,url)=>Object.assign(el('a',name),{href:url,target:'_blank',rel:'noopener noreferrer'});
 let last='';
@@ -19,6 +19,7 @@ async function refresh(){
       if(j.phase==='待确认'){const d=el('details','');d.append(el('summary','确认后如何合并？'),el('p','试用满意后，由维护者在项目根目录运行以下命令。网页没有合并权限。'),el('pre','pnpm upgrade:accept '+j.id+' '+j.sha));a.append(d);}
       list.append(a);
     }
+    if(/^#job-[0-9a-f]{12}$/.test(location.hash)) document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'nearest'});
   }catch(e){error.textContent=e.message;}
 }
 async function submit(payload){
@@ -26,5 +27,5 @@ async function submit(payload){
   catch(e){error.textContent=e.message;}
 }
 $('form').onsubmit=e=>{e.preventDefault();if(input.value.trim())void submit({request:input.value.trim()});};
-$('#sample').onclick=()=>{input.value='文件结果支持 XLSX';input.focus();};
+$('#sample').onclick=()=>{input.value='新增工时汇总工具：每行输入类别和分钟数，用逗号分隔，忽略空行，按类别合计输出。';input.focus();};
 await refresh();setInterval(refresh,1400);

@@ -65,6 +65,20 @@ class ResultsController {
     return meta(await this.queue.jobs.create({ tenantId:ctx.tenantId, userId:ctx.userId, title, format:body.format, content:body.content,
       status:'queued', size:0, expiresAt:new Date(Date.now()+7*86400000) }));
   }
+  @Get(':id/preview') @Header('Cache-Control','private, no-store')
+  async preview(@Headers() headers: H, @Param('id') id:string) {
+    const scope = owner(contextFromHeaders(headers));
+    if (!isObjectIdOrHexString(id)) throw new NotFoundException();
+    const job = await this.queue.jobs.findOne({ ...scope, _id:id, format:'xlsx' }).select('+bytes');
+    if (!job) throw new NotFoundException();
+    if (job.status !== 'ready' || !job.bytes) throw new ConflictException('文件尚未就绪。');
+    const { Workbook } = await import('exceljs');
+    const workbook = new Workbook();
+    await workbook.xlsx.load(Uint8Array.from(job.bytes).buffer);
+    const sheet = workbook.worksheets[0];
+    return { rows: Array.from({length: Math.min(sheet.rowCount,100)}, (_,i) =>
+      Array.from({length: Math.min(sheet.columnCount,30)}, (_,j) => sheet.getCell(i+1,j+1).text)) };
+  }
   @Get(':id/file')
   async file(@Headers() headers: H, @Param('id') id:string, @Res() reply:FastifyReply) {
     const scope = owner(contextFromHeaders(headers));

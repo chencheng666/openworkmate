@@ -3,7 +3,7 @@ import { getIdentityHeaders } from './auth-session';
 import { apiBase, native, storeFile } from './platform';
 import MarkdownAnswer from './MarkdownAnswer';
 
-const kinds = { md:'Markdown 文档', csv:'CSV 表格', png:'PNG 摘要卡', mp4:'MP4 简报' };
+const kinds = { xlsx:'Excel 工作簿（XLSX）', md:'Markdown 文档', csv:'CSV 表格', png:'PNG 摘要卡', mp4:'MP4 简报' };
 type Kind = keyof typeof kinds;
 type Result = {id:string;filename:string;format:Kind;status:'queued'|'running'|'ready'|'failed';size:number;error?:string};
 const states = { queued:'排队中',running:'生成中',ready:'已就绪',failed:'生成失败' };
@@ -47,6 +47,11 @@ export default function FileResults({source,close}:{source:string;close:()=>void
   useEffect(()=>{
     const ac=new AbortController();let url='';setPreview(null);
     if(active)void (async()=>{try{
+      if(active.format==='xlsx'){
+        const {rows}=await(await api('/'+active.id+'/preview',{signal:ac.signal})).json();
+        if(!ac.signal.aborted) setPreview({id:active.id,url:'',text:JSON.stringify(rows)});
+        return;
+      }
       const b=await(await api('/'+active.id+'/file',{signal:ac.signal})).blob();
       const body=active.format==='csv'||active.format==='md'?await b.text():'';
       if(!ac.signal.aborted){url=URL.createObjectURL(b);setPreview({id:active.id,url,text:body});}
@@ -75,7 +80,7 @@ export default function FileResults({source,close}:{source:string;close:()=>void
       <h3>生成文件</h3><label>文件名称<input required maxLength={72} value={title} onChange={e=>setTitle(e.target.value)} /></label>
       <label>格式<select value={kind} onChange={e=>setKind(e.target.value as Kind)}>{Object.entries(kinds).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
       <label>正文<textarea required maxLength={12000} rows={6} value={text} onChange={e=>setText(e.target.value)} placeholder="输入正文，或从一条对话回答创建文件" /></label>
-      <small>{kind==='png'?'取正文前 6 行生成摘要卡。':kind==='mp4'?'将正文排成最多 4 张字幕卡，每张播放 3 秒，无音轨。':kind==='csv'?'优先导出第一张 Markdown 表，无表格时按段落分行。':'保留 Markdown 原文和表格。'}</small>
+      <small>{kind==='png'?'取正文前 6 行生成摘要卡。':kind==='mp4'?'将正文排成最多 4 张字幕卡，每张播放 3 秒，无音轨。':kind==='xlsx'?'导出真正的 Excel 工作簿，保留编号原文。预览显示前 100 行、30 列。':kind==='csv'?'优先导出第一张 Markdown 表，无表格时按段落分行。':'保留 Markdown 原文和表格。'}</small>
       <button className="file-submit" disabled={busy||!text.trim()||!title.trim()}>{busy?'提交中…':'生成文件'}</button></form>
       <section><h3>我的结果 <small>保留 7 天</small></h3>
       {native&&<div className="desktop-prefs"><span>唤起：{shortcut}</span><button onClick={()=>void choose().catch(handleError)}>{folder?'更换保存目录':'选择保存目录'}</button>{folder&&<small>{folder}</small>}</div>}
@@ -85,6 +90,6 @@ export default function FileResults({source,close}:{source:string;close:()=>void
       {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
       {active&&<section ref={previewSection} className="file-preview" aria-label="文件预览"><h3>{active.filename}</h3>{preview?.id!==active.id?'正在加载预览…':
         active.format==='png'?<img src={preview.url} alt={active.filename}/>:active.format==='mp4'?<video controls playsInline src={preview.url} aria-label={active.filename}/>:
-        active.format==='md'?<MarkdownAnswer>{preview.text}</MarkdownAnswer>:<table><tbody>{csvRows(preview.text).map((r,i)=><tr key={i}>{r.map((c,j)=><td key={j}>{c}</td>)}</tr>)}</tbody></table>}</section>}
+        active.format==='md'?<MarkdownAnswer>{preview.text}</MarkdownAnswer>:<table><tbody>{(active.format==='xlsx'?JSON.parse(preview.text) as string[][]:csvRows(preview.text)).map((r,i)=><tr key={i}>{r.map((c,j)=><td key={j}>{c}</td>)}</tr>)}</tbody></table>}</section>}
     </div></dialog>;
 }

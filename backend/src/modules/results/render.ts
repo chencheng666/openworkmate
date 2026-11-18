@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { renderAsync } from '@resvg/resvg-js';
 
-export const formats = { md: 'text/markdown', csv: 'text/csv', png: 'image/png', mp4: 'video/mp4' } as const;
+import { Workbook } from 'exceljs';
+
+export const formats = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', md: 'text/markdown', csv: 'text/csv', png: 'image/png', mp4: 'video/mp4' } as const;
 export type Format = keyof typeof formats;
 export function tableRows(text: string): string[][] {
   const lines = text.trim().split(/\r?\n/);
@@ -29,6 +31,15 @@ async function slide(title: string, lines: string[], footer: string) {
   return (await renderAsync(svg)).asPng();
 }
 export async function renderFile(kind: Format, title: string, text: string): Promise<Buffer> {
+  if (kind === 'xlsx') {
+    const workbook = new Workbook();
+    const sheet = workbook.addWorksheet('文件结果', { views: [{ state: 'frozen', ySplit: 1 }] });
+    // 所有输入按文本写入，避免编号丢零、长号失真或用户文本被当成公式。
+    sheet.addRows(tableRows(text));
+    sheet.getRow(1).font = { bold: true };
+    sheet.columns.forEach(column => { column.width = 24; });
+    return Buffer.from(await workbook.xlsx.writeBuffer());
+  }
   if (kind === 'md') return Buffer.from(text);
   if (kind === 'csv') return Buffer.from('\uFEFF' + tableRows(text).map(row => row.map(s => {
     const safe = /^\s*[=+@-]|^[\t\r\n]/.test(s) ? "'" + s : s;

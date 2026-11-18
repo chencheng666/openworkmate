@@ -55,7 +55,7 @@ fn write_result(folder: &Path, filename: &str, data: &[u8]) -> Result<String, St
             .0
             .chars()
             .all(|c| c.is_alphanumeric() || " _-".contains(c))
-        || !matches!(ext.1, "md" | "csv" | "png" | "mp4")
+        || !matches!(ext.1, "md" | "xlsx" | "csv" | "png" | "mp4")
         || data.is_empty()
         || data.len() > 8 * 1024 * 1024
     {

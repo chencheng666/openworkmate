@@ -9,7 +9,7 @@ for await (const part of process.stdin) {
 const key = input.trim();
 if (!/^sk-[A-Za-z0-9_-]{20,}$/.test(key)) throw new Error('输入不是有效格式的 OpenAI API Key。');
 await writeFile(new URL('../backend/.env.openai.local', import.meta.url), [
-  'WEB_CHAT_DEMO_MODE=false', 'CHAT_PROVIDER=openai', 'OPENAI_CHAT_MODEL=gpt-4.1-mini',
+  'WEB_CHAT_DEMO_MODE=false', 'CHAT_PROVIDER=openai', 'OPENAI_CHAT_MODEL=gpt-6.2-sol',
   'OPENAI_API_KEY=' + key, 'KNOWLEDGE_EMBEDDING_BASE_URL=https://api.openai.com/v1',
   'KNOWLEDGE_EMBEDDING_MODEL=text-embedding-3-small', '',
 ].join('\n'), { flag: 'wx', mode: 0o600 });

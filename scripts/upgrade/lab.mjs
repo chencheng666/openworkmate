@@ -139,8 +139,10 @@ if(args[0]==='accept'){
   if(await git(root,'branch','--show-current')!==j.target||await git(root,'rev-parse','HEAD')!==j.base||await git(root,'status','--porcelain')||await git(j.dir,'rev-parse','HEAD')!==sha||await git(j.dir,'status','--porcelain'))throw Error('分支或工作树已变化，拒绝合并，请重新验证。');
   await git(root,'merge','--ff-only',sha);step(j,'已合并','维护者已明确确认并快进合并。');
 }else {
-  const host='127.0.0.1:18794',origin='http://'+host;
-  const origins=new Set([origin,'http://127.0.0.1:18790','http://127.0.0.1:5180']);
+  const labPort=Number(process.env.WORKMATE_LAB_PORT||18794),workspacePort=Number(process.env.WORKMATE_WORKSPACE_PORT||18790);
+  if([labPort,workspacePort].some(p=>!Number.isInteger(p)||p<1024||p>65535))throw Error('无效的本机端口');
+  const host='127.0.0.1:'+labPort,origin='http://'+host;
+  const origins=new Set([origin,'http://127.0.0.1:'+workspacePort,...(workspacePort===18790?['http://127.0.0.1:5180']:[])]);
   let reserving=false;
   const server=createServer(async(req,res)=>{
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');
@@ -184,7 +186,7 @@ if(args[0]==='accept'){
       }finally{reserving=false;}
     }catch(e){return send(400,{message:e.message});}
   });
-  server.listen(18794,'127.0.0.1',()=>{
+  server.listen(labPort,'127.0.0.1',()=>{
     for(const j of jobs.values())if(!['已合并','失败','预览已停止'].includes(j.phase))step(j,j.phase==='待确认'?'预览已停止':'失败','升级服务已重启，之前的预览不再作数。');
     console.log('本地升级对话：'+origin);
   });

@@ -203,14 +203,16 @@ export function App() {
       if (!general && /^(?:\/升级(?:\s|$)|升级[：:])/.test(message)) {
         if(location.hostname!=='127.0.0.1' && location.hostname!=='localhost') throw new Error('源码升级只在维护者本机开放。');
         const request=message.replace(/^(?:\/升级|升级[：:])\s*/,'');
-        if(['http://127.0.0.1:18790','http://127.0.0.1:5180'].includes(location.origin)){
+        const workspace='http://127.0.0.1:'+(import.meta.env.VITE_WORKSPACE_PORT||18790);
+        const lab='http://127.0.0.1:'+Number(import.meta.env.VITE_UPGRADE_LAB_PORT||18794);
+        if(location.origin===workspace || (workspace.endsWith(':18790')&&location.origin==='http://127.0.0.1:5180')){
           setStatusText('正在提交模型升级需求…');
-          const r=await fetch('http://127.0.0.1:18794/jobs',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json','X-Local-Upgrade':'1'},body:JSON.stringify({request})}).catch(()=>{throw Error('无法连接本地升级服务，请先启动 pnpm upgrade:lab。');});
+          const r=await fetch(lab+'/jobs',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json','X-Local-Upgrade':'1'},body:JSON.stringify({request})}).catch(()=>{throw Error('无法连接本地升级服务，请先启动 pnpm upgrade:lab。');});
           const j=await r.json();if(!r.ok||!/^\w{12}$/.test(j.id))throw Error(j.message||'提交失败');
-          updateActiveSession(s=>({...s,messages:[...s.messages,{id:crypto.randomUUID(),role:'assistant',content:'升级任务已提交。可以[查看生成进度、代码差异和候选预览](http://127.0.0.1:18794/#job-'+j.id+')。只有你明确确认才会合并。'}]}));
+          updateActiveSession(s=>({...s,messages:[...s.messages,{id:crypto.randomUUID(),role:'assistant',content:'升级任务已提交。可以[查看生成进度、代码差异和候选预览]('+lab+'/#job-'+j.id+')。只有你明确确认才会合并。'}]}));
           setStatusText('已提交本地升级任务');return;
         }
-        const url='http://127.0.0.1:18794/#request='+encodeURIComponent(request);
+        const url=lab+'/#request='+encodeURIComponent(request);
         updateActiveSession(s=>({...s,messages:[...s.messages,{id:crypto.randomUUID(),role:'assistant',content:'[在本地升级对话中确认需求]('+url+')。提交后会创建独立分支、运行测试并提供试用地址。不会自动合并。'}]}));
         setStatusText('升级需求未发送到知识库');return;
       }

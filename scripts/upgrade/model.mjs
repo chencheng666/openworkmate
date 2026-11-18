@@ -53,14 +53,15 @@ export function contract(obj) {
   if(new Set(cases.map(c=>JSON.stringify([c.action,c.values]))).size!==cases.length||actions.some(a=>!cases.some(c=>a.id===c.action))) throw Error('样例必须不同并覆盖每个操作');
   return {title:string(obj.title,60,'功能名'),description:string(obj.description,300,'功能说明'),fields,actions,cases};
 }
-async function provider(root){
+export async function provider(root){
   const cfg=parseEnv(await readFile(join(root,'backend/.env.openai.local'),'utf8').catch(()=>''));
-  const token=process.env.OPENAI_API_KEY||cfg.OPENAI_API_KEY,model=process.env.UPGRADE_MODEL||cfg.OPENAI_CHAT_MODEL||'gpt-4.1-mini';
+  const local=parseEnv(await readFile(join(root,'backend/.env.local'),'utf8').catch(()=>''));
+  const token=process.env.OPENAI_API_KEY||cfg.OPENAI_API_KEY,model=process.env.OPENAI_CHAT_MODEL||cfg.OPENAI_CHAT_MODEL||local.OPENAI_CHAT_MODEL||'gpt-6.2-sol';
   if(!token)throw Error('升级服务未配置 OpenAI 服务端密钥；不会回退成配方。');
   return {model,async ask(system,data){
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',redirect:'error',signal:AbortSignal.timeout(90000),
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({model,response_format:{type:'json_object'},max_tokens:4300,messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(data)}]})});
+      body:JSON.stringify({model,response_format:{type:'json_object'},max_completion_tokens:4300,messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(data)}]})});
     if(!r.ok)throw Error('模型请求失败 HTTP '+r.status+'；请检查密钥权限、网络或额度。');
     const response=await r.json();const msg=response.choices?.[0];
     if(msg?.finish_reason!=='stop')throw Error('模型未完成生成，不使用截断结果');

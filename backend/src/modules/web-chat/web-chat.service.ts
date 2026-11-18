@@ -7,6 +7,7 @@ import { KNOWLEDGE_SEARCH_TOOL_NAME } from '../knowledge/knowledge-tool-declarat
 import { SkillFactoryService } from '../skill-factory/skill-factory.service';
 import { WebChatDto } from './dto/web-chat.dto';
 import { buildDemoAnswer } from './demo-answer';
+import {answerWithTools,ResponsesPermissionError} from './responses-tools';
 
 type DeepSeekMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -96,8 +97,7 @@ export class WebChatService {
     }
 
     const baseUrl = openai ? 'https://api.openai.com/v1' : (this.config.get<string>('DEEPSEEK_BASE_URL') ?? 'https://api.deepseek.com/v1').replace(/\/$/, '');
-    const defaultModel = openai ? this.config.get<string>('OPENAI_CHAT_MODEL') || 'gpt-4.1-mini' : this.config.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat';
-    const model = openai && general ? this.config.get<string>('OPENAI_GENERAL_CHAT_MODEL')?.trim() || defaultModel : defaultModel;
+    const model = openai ? this.config.get<string>('OPENAI_CHAT_MODEL')?.trim() || 'gpt-6.2-sol' : this.config.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90_000);
 
@@ -105,7 +105,24 @@ export class WebChatService {
       let answer = '';
       let providerModel: string | undefined;
       const skillExecutions: unknown[] = [];
-      for (let round = 0; round < 3; round += 1) {
+      let toolsUnavailable=false;
+      if(openai && skillTools.length>0 && model.startsWith('gpt-6')){
+        try{
+          ({answer,providerModel}=await answerWithTools({apiKey,model,messages,tools:skillTools.map(t=>t.function),signal:controller.signal,
+            execute:async (name,input)=>{
+              const tool=runtimeTools.find(t=>t.name===name)!;
+              const result=await this.skills.execute(ctx,{skillName:tool.skillName,input,requestId:dto.sessionId});
+              skillExecutions.push({skillName:tool.skillName,result});return result;
+            },
+          }));
+        }catch(e){
+          if(!(e instanceof ResponsesPermissionError))throw e;
+          // 仅首轮、未执行业务前才允许改为纯知识回答，不重放可能已执行的动作。
+          toolsUnavailable=true;
+          messages.splice(1,1,{role:'system',content:'业务工具当前不可用。只能根据知识资料回答；不能声称已查询、创建或修改任何业务记录。'});
+        }
+      }
+      for (let round = 0; !answer && round < 3; round += 1) {
         const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -116,7 +133,7 @@ export class WebChatService {
           model,
           messages,
           ...(openai ? { max_completion_tokens: 1800 } : { temperature: 0.2, max_tokens: 1800 }),
-          ...(skillTools.length > 0 ? { tools: skillTools, tool_choice: 'auto' } : {}),
+          ...(skillTools.length > 0 && !toolsUnavailable ? { tools: skillTools, tool_choice: 'auto' } : {}),
         }),
         signal: controller.signal,
         });
@@ -130,7 +147,7 @@ export class WebChatService {
         providerModel = completion?.model;
         const assistantMessage = completion?.choices?.[0]?.message;
         const toolCalls = assistantMessage?.tool_calls ?? [];
-        if (general && toolCalls.length) throw new BadGatewayException('通用问答不执行业务工具，请重新提问。');
+        if ((general||toolsUnavailable) && toolCalls.length) throw new BadGatewayException('当前问答不执行业务工具，请重新提问。');
         if (toolCalls.length === 0) {
           answer = assistantMessage?.content?.trim() || '';
           break;
@@ -163,7 +180,8 @@ export class WebChatService {
 
       return {
         sessionId: dto.sessionId || randomUUID(),
-        answer,
+        answer:toolsUnavailable?'业务工具暂不可用，本次未查询或操作业务系统。\n\n'+answer:answer,
+        ...(toolsUnavailable?{toolStatus:'responses_permission_required'}:{}),
         citations,
         mode: general ? 'general' : 'enterprise',
         retrieval: knowledgeRuntime?.result.retrieval,

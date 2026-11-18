@@ -22,6 +22,12 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+:where(.web-shell,.admin-shell,.brand-preview) {
+  --rail: color-mix(in srgb,var(--primary-soft) 38%,#f8f9fb);
+  --rail-line: color-mix(in srgb,var(--primary) 9%,#e1e5eb);
+  --rail-surface: linear-gradient(155deg,var(--rail),#fafbfd 84%);
+  --rail-selection: color-mix(in srgb,var(--primary) 10%,white);
+}
 body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }

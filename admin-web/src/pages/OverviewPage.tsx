@@ -13,8 +13,9 @@ export function OverviewPage() {
     <div className="page-stack" data-testid="admin-overview-page">
       <section className="page-heading workspace-heading">
         <div>
+          <small className="admin-kicker">管理空间</small>
           <h1>管理工作台</h1>
-          <p>管理员工可以查询的资料和调用的业务能力。</p>
+          <p>维护员工可查询的资料、可调用的系统与工具。</p>
         </div>
       </section>
       <section className="governance-tasks" aria-label="常用操作">

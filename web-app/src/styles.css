@@ -3,14 +3,14 @@
 html, body, #root { height: 100%; }
 body { overflow: hidden; }
 button { cursor: pointer; }
-.web-shell { display: flex; height: 100dvh; --rail: color-mix(in srgb, var(--primary-soft) 38%, #f8f9fb); --rail-line: color-mix(in srgb, var(--primary) 9%, #e1e5eb); background: var(--surface); }
+.web-shell { display: flex; height: 100dvh; background: var(--surface); }
 .web-sidebar {
   display: flex;
   flex: 0 0 clamp(216px, 17vw, 256px);
   min-width: 0;
   flex-direction: column;
   min-height: 0;
-  background: linear-gradient(155deg, var(--rail), #fafbfd 84%);
+  background: var(--rail-surface);
   color: var(--ink);
   border-inline-end: 1px solid var(--rail-line);
 }
@@ -59,7 +59,7 @@ button { cursor: pointer; }
 .session-item { margin-bottom:3px; color:var(--muted); }
 .session-item svg, .workspace-links svg { flex:none; }
 .session-item:hover, .workspace-links :is(a,button):hover { background:var(--primary-soft); color:var(--ink); }
-.session-item.is-active { background:color-mix(in srgb,var(--primary) 10%,white); color:var(--primary-dark); font-weight:650; box-shadow:inset 3px 0 var(--primary); }
+.session-item.is-active { background:var(--rail-selection); color:var(--primary-dark); font-weight:650; box-shadow:inset 3px 0 var(--primary); }
 .session-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-links { display:grid; gap:2px; margin:0 14px; padding:12px 0 max(18px,env(safe-area-inset-bottom)); border-top:1px solid var(--rail-line); }
 .workspace-links :is(a,button) { display:flex; align-items:center; gap:11px; min-height:40px; padding:8px 12px; border:0; border-radius:8px; background:transparent; color:var(--muted); text-decoration:none; font-size:13px; }

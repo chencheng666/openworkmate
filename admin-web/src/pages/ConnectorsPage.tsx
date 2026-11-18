@@ -85,13 +85,13 @@ function ConnectorCreateModal({ onClose, onSaved }: { onClose: () => void; onSav
         {error && <ErrorBanner message={error} onClose={() => setError('')} />}
         <label><span>系统名称</span><input className="form-control" name="displayName" required placeholder="例如：企业工单" /></label>
         <label><span>查询接口地址</span><input className="form-control" name="endpoint" type="url" required placeholder="https://tickets.example.com/api/query" /></label>
+        <label><span>认证方式</span><select className="form-control" value={authMode} onChange={(event) => setAuthMode(event.target.value)}><option value="none">无认证</option><option value="apiKey">API Key</option><option value="jwt">Bearer Token</option></select></label>
+        {authMode !== 'none' && <label><span>凭证环境变量名</span><input className="form-control" name="credential" required pattern="[A-Za-z_][A-Za-z0-9_]*" placeholder="TICKETS_API_KEY" /><small>填写服务端环境变量名，不要粘贴密钥。</small></label>}
         <details className="connector-advanced" onInvalid={(event) => { event.currentTarget.open = true; }}>
           <summary>高级配置</summary>
           <div className="form-grid two-columns">
             <label><span>系统类型</span><select className="form-control" name="type" defaultValue="custom">{Object.entries(typeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
             <label><span>请求方法</span><select className="form-control" name="method"><option>GET</option><option>POST</option></select></label>
-            <label><span>认证方式</span><select className="form-control" value={authMode} onChange={(event) => setAuthMode(event.target.value)}><option value="none">无</option><option value="apiKey">API Key</option><option value="jwt">Bearer Token</option></select></label>
-            {authMode !== 'none' && <label><span>凭证环境变量名</span><input className="form-control" name="credential" required pattern="[A-Za-z_][A-Za-z0-9_]*" placeholder="TICKETS_API_KEY" /></label>}
             <label><span>健康检查路径</span><input className="form-control" name="healthPath" placeholder="/health" /></label>
             <label><span>连接器标识</span><input className="form-control" name="key" placeholder={generatedKey} pattern={'[a-zA-Z0-9_\\-]+'} /></label>
             <label><span>能力标识</span><input className="form-control" name="capability" placeholder="query" pattern={'[a-zA-Z0-9_\\-]+'} /></label>

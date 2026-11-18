@@ -34,6 +34,7 @@ test('手机端对话列表按需展开，输入区保持可见', async ({ page 
 });
 
 test('长回答在消息区滚动，输入框保持可见并展示依据类型', async ({ page }) => {
+  // 消息增长不应挤走导航底部入口和输入框。
   await page.route('**/api/web-chat', async (route) => {
     const paragraphs = Array.from({ length: 16 }, (_, index) => `第 ${index + 1} 项处置说明：请记录催办节点、责任人和处理计划。`).join('\n');
     await route.fulfill({
@@ -67,6 +68,29 @@ test('长回答在消息区滚动，输入框保持可见并展示依据类型',
     });
 
     expect(layout).toEqual({ bodyScrollable: false, conversationScrollable: true, composerVisible: true });
+  await expect(page.getByRole('navigation',{name:'工作区入口'}).getByRole('button',{name:'文件结果'})).toBeInViewport();
+});
+
+test('长会话标题不撑宽侧栏，手机可从导航打开文件并返回对话',async({page})=>{
+  await page.route('**/api/web-chat',r=>r.fulfill({json:{answer:'收到'}}));
+  await page.route('**/api/results',r=>r.fulfill({json:[]}));
+  await page.goto('/');
+  const title='跨部门审批和项目进度汇总'.repeat(4);
+  await page.getByLabel('输入问题').fill(title);
+  await page.getByTitle('发送').click();
+  await expect(page.getByText('收到',{exact:true})).toBeVisible();
+  const active=page.locator('.session-item[aria-current=true]');
+  await expect(active).toHaveAttribute('title',await page.locator('.current-topic').innerText());
+  expect(await active.locator('span').evaluate(el=>el.scrollWidth>el.clientWidth)).toBe(true);
+  await page.setViewportSize({width:390,height:780});
+  await page.getByLabel('打开对话列表').click();
+  await page.getByRole('navigation',{name:'工作区入口'}).getByRole('button',{name:'文件结果'}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('complementary',{name:'对话列表'})).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByLabel('输入问题')).toBeInViewport();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
 });
 
 test('回答中的媒体需点开，表格和原文可下载', async ({ page }) => {

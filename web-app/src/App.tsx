@@ -4,6 +4,10 @@ import { ChatImages } from './ChatImages';
 import { imageIntent, type ChatImage } from '../../backend/src/modules/web-chat/media/contract';
 import {
   BookOpen,
+  Boxes,
+  FolderOpen,
+  LayoutGrid,
+  MessagesSquare,
   ChevronRight,
   FileText,
   LogIn,
@@ -333,33 +337,36 @@ export function App() {
         <button className="new-chat-button" onClick={startNewChat}>
           <MessageSquarePlus size={18} /> 新建对话
         </button>
-        <div className="sidebar-label">最近对话</div>
+        <div className="sidebar-label">最近对话 <span>{sessions.length}</span></div>
         <div className="session-list">
           {sessions.map((session) => (
-            <button key={session.id} className={`session-item ${session.id === activeId ? 'is-active' : ''}`} aria-current={session.id === activeId ? 'true' : undefined} onClick={() => { setActiveId(session.id); closeHistory(); }}>
-              <span className="session-dot" />
+            <button key={session.id} title={session.title} className={`session-item ${session.id === activeId ? 'is-active' : ''}`} aria-current={session.id === activeId ? 'true' : undefined} onClick={() => { setActiveId(session.id); closeHistory(); }}>
+              <MessagesSquare size={16} aria-hidden="true" />
               <span>{session.title}</span>
             </button>
           ))}
         </div>
+        <nav className="workspace-links" aria-label="工作区入口">
+          <button type="button" onClick={()=>{closeHistory(); setFileSource('');}}><FolderOpen size={17}/>文件结果</button>
+          {hasFeatures && <button type="button" onClick={()=>{closeHistory(); setShowFeatures(true);}}><Boxes size={17}/>工作台工具</button>}
+          {canManage && !native && <a href="/admin/"><LayoutGrid size={17}/>管理后台</a>}
+        </nav>
       </aside>
 
       <main className="web-main">
         <header className="web-topbar">
           <button ref={historyToggle} className="history-toggle" type="button" aria-label="打开对话列表" aria-controls="chat-sidebar" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}><Menu size={19} /></button>
           <strong className="topbar-title">工作助手</strong>
+          <span className="current-topic" title={activeSession.title}>{activeSession.title}</span>
           <div className="topbar-spacer" />
           <div className="connection-state" role="status">{statusText}</div>
-          <button className="user-chip" onClick={()=>setFileSource('')}>文件结果</button>
-          {hasFeatures&&<button className="user-chip" onClick={()=>setShowFeatures(true)}>工作台工具</button>}
-          {canManage && !native && <a className="user-chip" href="/admin/">管理后台</a>}
           <button className="user-chip user-name" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} /><span>{hasSession ? userName : '登录'}</span></button>
         </header>
 
         <div className="conversation" ref={scrollRef} data-testid="web-conversation" aria-label="对话消息区">
           {activeSession.messages.length === 0 ? (
             <section className="welcome-panel">
-              <img className="welcome-mark" src={brandIcon} alt="" />
+              <div className="welcome-kicker"><span aria-hidden="true" />{general ? '通用助手' : '企业工作空间'}</div>
               <h1>{general ? '想聊点什么？' : '今天想查什么？'}</h1>
               <p className="welcome-copy">{general ? '直接提问、找一张照片，或描述想画的插画。' : '查制度、找流程，或询问已接入的业务。'}</p>
               <div className="quick-grid">

@@ -11,19 +11,16 @@ const tasks = [
 export function OverviewPage() {
   return (
     <div className="page-stack" data-testid="admin-overview-page">
-      <section className="page-heading compact-heading">
+      <section className="page-heading workspace-heading">
         <div>
           <h1>管理工作台</h1>
           <p>管理员工可以查询的资料和调用的业务能力。</p>
         </div>
-        <a className="button secondary" href="/">返回员工对话</a>
       </section>
-      <section className="panel todo-panel" aria-label="常用操作">
-        <div className="governance-tasks">
+      <section className="governance-tasks" aria-label="常用操作">
           {tasks.map(({ to, label, description, icon: Icon }) => (
-            <Link key={to} to={to}><Icon size={19} /><span><strong>{label}</strong><small>{description}</small></span><ArrowRight size={16} /></Link>
+            <Link key={to} to={to}><span className="task-icon"><Icon size={22} /></span><span className="task-copy"><strong>{label}</strong><small>{description}</small></span><ArrowRight size={17} /></Link>
           ))}
-        </div>
       </section>
     </div>
   );

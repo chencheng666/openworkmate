@@ -12,7 +12,25 @@ test('开源品牌可见，Logo 可加载', async ({ page }) => {
   await expect(page.locator('.brand-block strong')).toHaveText('OpenWorkMate');
   const logo = page.locator('.brand-block img');
   await expect(logo).toHaveAttribute('src', '/brand/logo.svg');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/brand/logo.svg');
   await expect.poll(() => logo.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+});
+
+test('手机端对话列表按需展开，输入区保持可见', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await page.goto('/');
+  const toggle = page.getByRole('button', { name: '打开对话列表' });
+  await expect(page.getByRole('complementary', { name: '对话列表' })).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('button', { name: '收起对话列表' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(toggle).toBeFocused();
+  await toggle.click();
+  await page.getByRole('button', { name: '新建对话' }).click();
+  await expect(page.getByRole('complementary', { name: '对话列表' })).toBeHidden();
+  await expect(page.getByRole('textbox', { name: '输入问题' })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
 test('长回答在消息区滚动，输入框保持可见并展示依据类型', async ({ page }) => {

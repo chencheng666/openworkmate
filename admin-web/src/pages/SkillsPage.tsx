@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Boxes, Check, CircleAlert, Code2, LoaderCircle, PackageCheck, Plus, RefreshCw, Send, ShieldCheck, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Boxes, Check, CircleAlert, Code2, LoaderCircle, PackageCheck, Plus, RefreshCw, Send, X } from 'lucide-react';
 import { adminApi, entityId } from '../api';
 import { EmptyBlock, ErrorBanner, LoadingBlock, Modal } from '../components/Feedback';
 import type { InstalledSkill, SkillSubmission } from '../types';
@@ -52,7 +52,6 @@ export function SkillsPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
-  const pending = useMemo(() => submissions.filter((item) => item.status === 'submitted').length, [submissions]);
 
   const act = async (id: string, action: () => Promise<unknown>) => {
     setBusyId(id);
@@ -61,9 +60,9 @@ export function SkillsPage() {
 
   return (
     <div className="page-stack" data-testid="admin-skills-page">
-      <section className="page-heading compact-heading"><div><div className="eyebrow"><Boxes size={14} />企业能力资产</div><h1>Skill 管理</h1><p>员工提交业务经验，平台完成规范校验、风险审核和发布，最终装配到数智员工。</p></div><div className="heading-actions"><button className="button secondary" onClick={() => void load()}><RefreshCw size={16} />刷新</button><button className="button primary" onClick={() => setSubmitOpen(true)}><Plus size={16} />提交 Skill</button></div></section>
+      <section className="page-heading compact-heading"><div><h1>Skill 管理</h1><p>提交、审核和发布员工可用的业务能力。</p></div><div className="heading-actions"><button className="button secondary" onClick={() => void load()}><RefreshCw size={16} />刷新</button><button className="button primary" onClick={() => setSubmitOpen(true)}><Plus size={16} />提交 Skill</button></div></section>
       {error && <ErrorBanner message={error} onClose={() => setError('')} />}
-      <section className="metric-grid three"><article className="metric-card"><div className="metric-icon tone-blue"><Send size={19} /></div><div className="metric-label">待审核提交</div><div className="metric-value"><strong>{pending}</strong><span>项</span></div></article><article className="metric-card"><div className="metric-icon tone-green"><PackageCheck size={19} /></div><div className="metric-label">已发布能力</div><div className="metric-value"><strong>{installed.length}</strong><span>项</span></div></article><article className="metric-card"><div className="metric-icon tone-violet"><ShieldCheck size={19} /></div><div className="metric-label">高风险待治理</div><div className="metric-value"><strong>{submissions.filter((item) => item.manifest.riskLevel === 'high' && item.status === 'submitted').length}</strong><span>项</span></div></article></section>
+      {!loading && <div className="summary-line"><span>待审核 <b>{submissions.filter((item) => item.status === 'submitted').length}</b></span></div>}
       <section className="panel data-panel">
         <div className="tab-bar"><button className={tab === 'review' ? 'is-active' : ''} onClick={() => setTab('review')}>提交审核 <span>{submissions.length}</span></button><button className={tab === 'installed' ? 'is-active' : ''} onClick={() => setTab('installed')}>已发布 Skills <span>{installed.length}</span></button></div>
         {loading ? <LoadingBlock /> : tab === 'review' ? (

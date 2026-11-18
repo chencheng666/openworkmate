@@ -22,6 +22,7 @@ async function mountWeb(app: NestFastifyApplication) {
     [resolve(employee, 'assets'), '/assets/'],
     [resolve(employee, 'brand'), '/brand/'],
     [resolve(admin, 'assets'), '/admin/assets/'],
+    [resolve(admin, 'brand'), '/admin/brand/'],
   ]) {
     app.useStaticAssets({ root, prefix, decorateReply: false });
   }

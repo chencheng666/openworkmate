@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Archive,
-  BookOpenCheck,
   BookOpenText,
   CheckCircle2,
   ChevronRight,
@@ -210,9 +209,8 @@ export function KnowledgePage() {
     <div className="page-stack knowledge-page" data-testid="admin-knowledge-page">
       <section className="page-heading compact-heading">
         <div>
-          <div className="eyebrow"><BookOpenCheck size={14} />企业知识资产</div>
           <h1>企业知识库</h1>
-          <p>统一管理制度、SOP、合同规则和园区资料，并按组织身份为数智员工提供可信引用。</p>
+          <p>上传资料、设置可见范围、验证检索。</p>
         </div>
         <div className="heading-actions">
           <button className="button secondary" onClick={() => void refreshAll()}><RefreshCw size={16} />刷新</button>
@@ -222,12 +220,10 @@ export function KnowledgePage() {
 
       {error && <ErrorBanner message={error} onClose={() => setError('')} />}
 
-      <section className="knowledge-metrics">
-        <div><span>知识总量</span><strong>{totals.all}</strong><small>份企业文档</small></div>
-        <div><span>可检索</span><strong>{totals.ready}</strong><small>已完成索引</small></div>
-        <div><span>处理中</span><strong>{totals.indexing}</strong><small>异步解析与切片</small></div>
-        <div><span>异常任务</span><strong>{totals.failed}</strong><small>需要管理员处理</small></div>
-      </section>
+      <div className="summary-line">
+        <span>全部 <b>{totals.all}</b></span><span>可检索 <b>{totals.ready}</b></span>
+        <span>处理中 <b>{totals.indexing}</b></span><span>处理失败 <b>{totals.failed}</b></span>
+      </div>
 
       <section className="panel search-console">
         <div className="search-console-copy"><FileSearch size={21} /><div><strong>验证知识检索效果</strong><span>预览当前身份可检索到的知识片段。</span></div></div>

@@ -5,7 +5,6 @@ import type {
   KnowledgeDetail,
   KnowledgeDocument,
   KnowledgeSearchResult,
-  PlatformHealth,
   SkillSubmission,
   VisibilityRule,
 } from './types';
@@ -34,7 +33,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const adminApi = {
-  health: () => request<PlatformHealth>('/health'),
   knowledge: {
     list: () => request<KnowledgeDocument[]>('/knowledge/documents'),
     get: (id: string) => request<KnowledgeDetail>(`/knowledge/documents/${id}`),

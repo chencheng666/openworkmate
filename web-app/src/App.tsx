@@ -1,17 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   ChevronRight,
   FileText,
   LogIn,
+  Menu,
   MessageSquarePlus,
   Search,
   Send,
-  ShieldCheck,
-  Sparkles,
-  Waves,
+  X,
 } from 'lucide-react';
 import { devLogin, getIdentityHeaders, getUserName, clearAuthSession, getAccessToken, consumeAuthCallback, getAuthConfig, getSession, logoutSession, startOidcLogin, type AuthConfig } from './auth-session';
 
@@ -53,6 +50,8 @@ const quickPrompts = [
 ];
 
 const WEB_API_BASE = (import.meta.env.VITE_WEB_API_BASE || '/api').replace(/\/$/, '');
+const MarkdownAnswer = lazy(() => import('./MarkdownAnswer'));
+const brandIcon = '/brand/logo.svg';
 
 function createSession(): Session {
   return { id: crypto.randomUUID(), title: '新对话', updatedAt: Date.now(), messages: [] };
@@ -103,6 +102,18 @@ export function App() {
   const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [canManage, setCanManage] = useState(false);
   const [hasSession, setHasSession] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyToggle = useRef<HTMLButtonElement>(null);
+  const historyClose = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (historyOpen) historyClose.current?.focus();
+  }, [historyOpen]);
+
+  const closeHistory = () => {
+    setHistoryOpen(false);
+    if (historyOpen) historyToggle.current?.focus();
+  };
 
   useEffect(() => {
     void getAuthConfig().then(setAuthConfig).catch(() => setStatusText('暂时无法连接服务'));
@@ -197,6 +208,7 @@ export function App() {
     setSessions((current) => [next, ...current]);
     setActiveId(next.id);
     setDraft('');
+    closeHistory();
   };
 
   const submitLogin = async (event: React.FormEvent) => {
@@ -238,10 +250,12 @@ export function App() {
 
   return (
     <div className="web-shell">
-      <aside className="web-sidebar">
+      {historyOpen && <button className="history-backdrop" type="button" onClick={closeHistory} aria-label="关闭对话列表" tabIndex={-1} />}
+      <aside className={`web-sidebar ${historyOpen ? 'is-open' : ''}`} id="chat-sidebar" aria-label="对话列表" onKeyDown={(event) => { if (event.key === 'Escape') closeHistory(); }}>
         <div className="brand-block">
-          <img src="/brand/logo.svg" alt="企业" />
-          <div><strong>OpenWorkMate</strong><span>企业业务 AI 工作入口</span></div>
+          <img className="brand-logo" src={brandIcon} alt="" />
+          <strong>OpenWorkMate</strong>
+          <button ref={historyClose} className="sidebar-close" type="button" onClick={closeHistory} aria-label="收起对话列表"><X size={18} /></button>
         </div>
         <button className="new-chat-button" onClick={startNewChat}>
           <MessageSquarePlus size={18} /> 新建对话
@@ -249,34 +263,30 @@ export function App() {
         <div className="sidebar-label">最近对话</div>
         <div className="session-list">
           {sessions.map((session) => (
-            <button key={session.id} className={`session-item ${session.id === activeId ? 'is-active' : ''}`} onClick={() => setActiveId(session.id)}>
+            <button key={session.id} className={`session-item ${session.id === activeId ? 'is-active' : ''}`} aria-current={session.id === activeId ? 'true' : undefined} onClick={() => { setActiveId(session.id); closeHistory(); }}>
               <span className="session-dot" />
               <span>{session.title}</span>
             </button>
           ))}
         </div>
-        <div className="sidebar-foot">
-          <ShieldCheck size={16} />
-          <span>企业权限已启用<br />回答受知识库和组织权限约束</span>
-        </div>
       </aside>
 
       <main className="web-main">
         <header className="web-topbar">
-          <div className="topbar-copy"><span>OpenWorkMate</span><strong>企业业务对话</strong></div>
+          <button ref={historyToggle} className="history-toggle" type="button" aria-label="打开对话列表" aria-controls="chat-sidebar" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}><Menu size={19} /></button>
+          <strong className="topbar-title">工作助手</strong>
           <div className="topbar-spacer" />
-          <div className="connection-state"><i />{statusText}</div>
+          <div className="connection-state" role="status">{statusText}</div>
           {canManage && <a className="user-chip" href="/admin/">管理后台</a>}
-          <button className="user-chip" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} />{hasSession ? userName : '登录'}</button>
+          <button className="user-chip user-name" onClick={() => setLoginOpen(true)} title="登录与身份设置"><LogIn size={13} /><span>{hasSession ? userName : '登录'}</span></button>
         </header>
 
         <div className="conversation" ref={scrollRef} data-testid="web-conversation" aria-label="对话消息区">
           {activeSession.messages.length === 0 ? (
             <section className="welcome-panel">
-              <div className="welcome-mark"><Waves size={28} /></div>
-              <p className="eyebrow"><Sparkles size={14} /> 企业内部 AI 业务入口</p>
-              <h1>让企业知识，变成工作助力</h1>
-              <p className="welcome-copy">查询制度、推进工单、分析运营数据，让每位员工用自然语言连接企业知识库和内部业务。</p>
+              <img className="welcome-mark" src={brandIcon} alt="" />
+              <h1>今天想查什么？</h1>
+              <p className="welcome-copy">查制度、找流程，或询问已接入的业务。</p>
               <div className="quick-grid">
                 {quickPrompts.map(({ title, text, icon: Icon }) => (
                   <button key={title} className="quick-card" onClick={() => void sendMessage(text)}>
@@ -289,13 +299,13 @@ export function App() {
             <section className="message-list">
               {activeSession.messages.map((message) => (
                 <article key={message.id} className={`message-row ${message.role}`}>
-                  {message.role === 'assistant' && <div className="assistant-avatar"><Waves size={16} /></div>}
+                  {message.role === 'assistant' && <img className="assistant-avatar" src={brandIcon} alt="" />}
                   <div className="message-content">
                     <div className="message-bubble">
                       {message.role === 'assistant' ? splitAnswerBlocks(message.content).map((block, index) => (
                         <div key={`${block.title ?? 'answer'}-${index}`} className={`answer-block ${block.kind ? `is-${block.kind}` : ''}`}>
                           {block.title && <span className="evidence-tag">{block.title}</span>}
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
+                          <Suspense fallback={<span role="status">正在排版…</span>}><MarkdownAnswer>{block.content}</MarkdownAnswer></Suspense>
                         </div>
                       )) : message.content}
                     </div>
@@ -305,22 +315,22 @@ export function App() {
                   </div>
                 </article>
               ))}
-              {sending && <div className="message-row assistant"><div className="assistant-avatar"><Waves size={16} /></div><div className="message-bubble loading-answer"><span /> <span /> <span /> 正在生成回答</div></div>}
+              {sending && <div className="message-row assistant"><img className="assistant-avatar" src={brandIcon} alt="" /><div className="message-bubble loading-answer" role="status">正在生成回答…</div></div>}
             </section>
           )}
         </div>
 
         <div className="composer-wrap" data-testid="web-composer">
           <form className="composer" onSubmit={(event) => { event.preventDefault(); void sendMessage(); }}>
-            <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="描述你要处理的企业业务…" rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} />
-            <div className="composer-actions"><button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送"><Send size={17} /></button></div>
+            <textarea aria-label="输入问题" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="描述你要处理的企业业务…" rows={2} disabled={sending} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendMessage(); } }} />
+            <button className="send-button" type="submit" disabled={!draft.trim() || sending} title="发送" aria-label="发送"><Send size={18} /></button>
           </form>
           {authConfig && <small className="composer-note">{authConfig.demoMode ? '演示模式 · 回答来自示例知识库的检索结果' : '请结合制度原文核对回答。'}</small>}
         </div>
       </main>
       {loginOpen && <div className="auth-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLoginOpen(false); }}>
         <form className="auth-card" onSubmit={(event) => void submitLogin(event)}>
-          <div className="auth-card-heading"><div><span>OpenWorkMate</span><strong>登录与身份校验</strong></div><button type="button" className="auth-close" onClick={() => setLoginOpen(false)}>×</button></div>
+          <div className="auth-card-heading"><strong>登录 OpenWorkMate</strong><button type="button" className="auth-close" aria-label="关闭登录弹窗" onClick={() => setLoginOpen(false)}><X size={19} /></button></div>
           {authConfig?.oidcEnabled && <button type="button" className="auth-submit" onClick={() => void beginSsoLogin()}>使用企业统一 SSO 登录</button>}
           {authConfig?.devLoginEnabled && !authConfig.oidcEnabled && <>
             <label>用户编号<input value={loginId} onChange={(event) => setLoginId(event.target.value)} required /></label>

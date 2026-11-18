@@ -7,7 +7,6 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/auth/me', (route) => route.fulfill({ json: {
     authenticated: true, context: { userName: '演示管理员', roleIds: ['platform-admin'] },
   } }));
-  await page.route('**/api/health', (route) => route.fulfill({ json: { status: 'ok' } }));
 });
 
 test('管理员从员工入口可以一步打开知识上传', async ({ page }) => {
@@ -15,6 +14,8 @@ test('管理员从员工入口可以一步打开知识上传', async ({ page }) 
   await page.goto('/');
   await page.getByRole('link', { name: '管理后台' }).click();
   await expect(page.getByRole('heading', { name: '管理工作台' })).toBeVisible();
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/admin/brand/logo.svg');
+  await expect.poll(() => page.locator('.brand-logo').evaluate((logo) => (logo as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   await page.getByRole('link', { name: /上传知识/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/knowledge\?upload=1$/);
@@ -22,6 +23,17 @@ test('管理员从员工入口可以一步打开知识上传', async ({ page }) 
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();
   await expect(page.getByTestId('admin-knowledge-upload')).toBeVisible();
+});
+
+test('手机端管理导航可展开并返回员工对话', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await page.goto('/admin/');
+  const navigation = page.getByRole('navigation', { name: '管理导航' });
+  await expect(navigation).toBeHidden();
+  await page.getByRole('button', { name: '打开导航' }).click();
+  await expect(navigation.getByRole('link', { name: '知识库' })).toBeVisible();
+  await page.getByRole('link', { name: '员工对话' }).click();
+  await expect(page.getByRole('heading', { name: '今天想查什么？' })).toBeVisible();
 });
 
 test('连接器只填两项即可创建只读草稿', async ({ page }) => {

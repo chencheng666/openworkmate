@@ -1,18 +1,19 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './components/AdminLayout';
-import { AuditPage } from './pages/AuditPage';
-import { ConnectorsPage } from './pages/ConnectorsPage';
-import { KnowledgePage } from './pages/KnowledgePage';
 import { OverviewPage } from './pages/OverviewPage';
-import { SkillsPage } from './pages/SkillsPage';
-import { AuthConfig, devLogin, getAuthConfig, getSession, logout, startOidcLogin } from './auth-session';
+import { devLogin, getAuthConfig, getSession, logout, startOidcLogin, type AuthConfig, type AuthSession } from './auth-session';
+import { LoadingBlock } from './components/Feedback';
 
-function AuthGate({ children }: { children: ReactNode }) {
+const AuditPage = lazy(() => import('./pages/AuditPage').then(({ AuditPage }) => ({ default: AuditPage })));
+const ConnectorsPage = lazy(() => import('./pages/ConnectorsPage').then(({ ConnectorsPage }) => ({ default: ConnectorsPage })));
+const KnowledgePage = lazy(() => import('./pages/KnowledgePage').then(({ KnowledgePage }) => ({ default: KnowledgePage })));
+const SkillsPage = lazy(() => import('./pages/SkillsPage').then(({ SkillsPage }) => ({ default: SkillsPage })));
+
+function AuthGate({ children }: { children: (session: AuthSession) => ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [authorized, setAuthorized] = useState(false);
-  const [config, setConfig] = useState<AuthConfig>({ mode: 'development', oidcEnabled: false, devLoginEnabled: true });
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [config, setConfig] = useState<AuthConfig>({ mode: 'unknown', oidcEnabled: false, devLoginEnabled: false });
   const [userId, setUserId] = useState('platform-admin-001');
   const [userName, setUserName] = useState('平台管理员');
   const [error, setError] = useState('');
@@ -20,17 +21,13 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   const refresh = () => Promise.all([
     getAuthConfig().then(setConfig),
-    getSession().then((session) => {
-      setAuthenticated(true);
-      const roles = session.context?.roleIds ?? [];
-      setAuthorized(roles.includes('platform-admin') || roles.includes('business-owner'));
-    }),
-  ]).catch(() => setAuthenticated(false)).finally(() => setLoading(false));
+    getSession().then(setSession),
+  ]).catch(() => setSession(null)).finally(() => setLoading(false));
 
   useEffect(() => {
     void refresh();
-    const onExpired = () => { setAuthenticated(false); setError('登录已过期，请重新登录。'); };
-    const onLogout = () => { setAuthenticated(false); setError('已退出当前管理后台会话。'); };
+    const onExpired = () => { setSession(null); setError('登录已过期，请重新登录。'); };
+    const onLogout = () => { setSession(null); setError('已退出当前管理后台会话。'); };
     window.addEventListener('auth-expired', onExpired);
     window.addEventListener('auth-logout', onLogout);
     return () => {
@@ -40,8 +37,10 @@ function AuthGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (loading) return <div className="admin-auth-state">正在验证平台会话…</div>;
-  if (authenticated && authorized) return <>{children}</>;
-  if (authenticated && !authorized) return <main className="admin-login-page"><section className="admin-login-card"><span className="admin-login-kicker">WORKMATE AI PLATFORM</span><h1>暂无管理权限</h1><p>当前账号已登录，但没有平台治理权限。请联系平台管理员申请 `platform-admin` 或 `business-owner` 角色。</p><button className="button secondary admin-login-button" onClick={() => { void logout(); setAuthenticated(false); }}>退出当前账号</button></section></main>;
+  if (session?.authenticated) {
+    if (session.context?.roleIds?.some((role) => role === 'platform-admin' || role === 'business-owner')) return children(session);
+    return <main className="admin-login-page"><section className="admin-login-card"><h1>暂无管理权限</h1><p>请联系管理员申请平台治理权限。</p><button className="button secondary admin-login-button" onClick={() => { void logout(); setSession(null); }}>退出当前账号</button></section></main>;
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError('');
@@ -55,6 +54,17 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 export function App() {
   return (
-    <AuthGate><Routes><Route element={<AdminLayout />}><Route index element={<OverviewPage />} /><Route path="knowledge" element={<KnowledgePage />} /><Route path="skills" element={<SkillsPage />} /><Route path="connectors" element={<ConnectorsPage />} /><Route path="audit" element={<AuditPage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></AuthGate>
+    <AuthGate>{(session) => (
+      <Routes>
+        <Route element={<AdminLayout accountName={session.context?.userName ?? '平台管理员'} />}>
+          <Route index element={<OverviewPage />} />
+          <Route path="knowledge" element={<Suspense fallback={<LoadingBlock />}><KnowledgePage /></Suspense>} />
+          <Route path="skills" element={<Suspense fallback={<LoadingBlock />}><SkillsPage /></Suspense>} />
+          <Route path="connectors" element={<Suspense fallback={<LoadingBlock />}><ConnectorsPage /></Suspense>} />
+          <Route path="audit" element={<Suspense fallback={<LoadingBlock />}><AuditPage /></Suspense>} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    )}</AuthGate>
   );
 }

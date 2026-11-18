@@ -61,21 +61,6 @@ export type KnowledgeSearchResult = {
   }>;
 };
 
-export type PlatformHealth = {
-  status: 'ok' | 'degraded';
-  service: string;
-  timestamp: string;
-  database: { readyState: number; name?: string; host?: string };
-  collections: {
-    connectors: number;
-    knowledgeDocuments: number;
-    knowledgeIngestionQueued: number;
-    skillSubmissions: number;
-    installedSkills: number;
-    auditEvents: number;
-  };
-};
-
 export type SkillSubmission = {
   _id?: string;
   id?: string;

@@ -5,7 +5,7 @@
  <text x="600" y="65" fill="#0f172a" font-size="32" font-weight="700">OpenWorkMate 技术架构</text>
  <text x="600" y="98" fill="#64748b" font-size="17">Web 优先 · 可信身份 · 知识与业务能力治理</text>
  <g fill="#eff6ff" stroke="#bfdbfe"><rect x="60" y="135" width="320" height="75" rx="14"/><rect x="440" y="135" width="320" height="75" rx="14"/><rect x="820" y="135" width="320" height="75" rx="14"/></g>
- <g fill="#1d4ed8" font-size="22"><text x="220" y="180">员工 Web 对话</text><text x="600" y="180">管理后台</text><text x="980" y="180">可选 Electron / OpenClaw</text></g>
+ <g fill="#1d4ed8" font-size="22"><text x="220" y="180">员工 Web 对话</text><text x="600" y="180">管理后台</text><text x="980" y="180">可选 Tauri 桌面端</text></g>
  <g stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"><path d="M220 210v30h380v30"/><path d="M600 210v60"/><path d="M980 210v30H600"/></g>
  <rect x="170" y="275" width="860" height="90" rx="16" fill="#2563eb"/>
  <text x="600" y="313" fill="white" font-size="25" font-weight="600">NestJS + Fastify 企业后端</text>

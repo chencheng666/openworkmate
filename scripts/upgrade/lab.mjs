@@ -15,7 +15,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const state = join(root,'outputs','upgrade-lab');
 const run = promisify(execFile);
 const env = { PATH: dirname(process.execPath)+':'+process.env.PATH, LANG:'en_US.UTF-8', TMPDIR:tmpdir(), CI:'1' };
-const cmd = async (cwd, exe, args) => (await run(exe,args,{cwd,env,timeout:180000,maxBuffer:4*1024*1024})).stdout.trim();
+const cmd = async (cwd, exe, args, extra={}) => (await run(exe,args,{cwd,env:{...env,...extra},timeout:180000,maxBuffer:4*1024*1024})).stdout.trim();
 const git = (cwd,...args) => cmd(cwd,'git',['-c','core.hooksPath=/dev/null',...args]);
 const validId = id => /^[a-f0-9]{12}$/.test(id);
 mkdirSync(state,{recursive:true,mode:0o700});
@@ -117,6 +117,8 @@ async function pipeline(j,spec,resume=false) {
     step(j,'启动中',output.split('\n').find(l=>/^\s*Tests\s+\d+ passed/.test(l))?.trim()||'单元测试通过');
     await launch(j);
     if(spec.kind==='xlsx') {await verifyXlsx(j);step(j,'启动中','真实队列生成工作簿，预览、下载、跨用户拒绝均通过');}
+    const browser=await cmd(join(j.dir,'web-app'),join(j.dir,'node_modules/.bin/playwright'),['test','--workers=2','--reporter=list'],{WORKMATE_PREVIEW_URL:j.preview});
+    step(j,'验证中',browser.split('\n').find(l=>/^\s*\d+ passed/.test(l))?.trim()||'候选页面端到端回归通过');
     step(j,'待确认','独立预览已就绪；未合并。');
   }catch(e){
     const detail=String(e.stdout||e.stderr||e.message).replace(/\x1B\[[0-9;]*m/g,'').slice(-3500);

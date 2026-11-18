@@ -10,8 +10,29 @@ function string(v,max,label,min=1){
   return v;
 }
 export function modelRequest(raw){
-  const title=string(raw?.trim(),600,'升级需求');
+  const title=string(raw?.trim(),1200,'升级需求');
+  pinnedExamples(title);
   return {kind:'model',title};
+}
+export function pinnedExamples(request){
+  return request.split(/\r?\n/).filter(line=>/^验收[：:]/.test(line)).map(line=>{
+    let value;try{value=JSON.parse(line.replace(/^验收[：:]\s*/,''));}catch{throw Error('验收行需要 JSON，例如：验收：{"输入":["样例"],"输出":"预期"}');}
+    if(!Array.isArray(value?.输入)||!value.输入.length||value.输入.length>6)throw Error('验收输入需按字段顺序提供字符串数组');
+    const action=value.操作??1;
+    if(!Number.isInteger(action)||action<1||action>6)throw Error('验收操作使用从 1 开始的按钮序号');
+    return {inputs:value.输入.map(v=>string(v,1000,'固定输入',0)),action,expect:string(value.输出,4000,'固定预期',0)};
+  });
+}
+export function lockExamples(spec,examples){
+  const cases=[...spec.cases];
+  for(const e of examples){
+    if(e.inputs.length!==spec.fields.length||!spec.actions[e.action-1])throw Error('模型设计与指定验收样例的字段或按钮数量不一致');
+    const c={values:Object.fromEntries(spec.fields.map((f,i)=>[f.id,e.inputs[i]])),action:spec.actions[e.action-1].id,expect:e.expect};
+    const idx=cases.findIndex(k=>k.action===c.action&&JSON.stringify(k.values)===JSON.stringify(c.values));
+    if(idx>=0&&cases[idx].expect!==c.expect)throw Error('模型样例与用户固定预期冲突');
+    if(idx<0)cases.push(c);
+  }
+  return contract({...spec,cases});
 }
 const key=v=>typeof v==='string'&&/^[a-z][A-Za-z0-9_]{0,30}$/.test(v)&&!Object.hasOwn(Object.prototype,v)&&v!=='prototype';
 function controls(v,isField){
@@ -62,7 +83,11 @@ export async function generate(root,j,report){
   const api=await provider(root),old=await previousFeature(j.dir,j.title);
   const id=old?.id||j.id,request=j.title;
   report('模型 '+api.model+' 正在设计'+(old?'「'+old.spec.title+'」的改进':'新功能')+'和验收样例');
-  const spec=contract(await api.ask(planner,{request,existing:old?.spec}));
+  const pins=pinnedExamples(request);
+  const draft=contract(await api.ask(planner,{request,existing:old?.spec,pinned: pins}));
+  report('复核边界条件和精确输出；维护者固定样例 '+pins.length+' 个');
+  const reviewed=await api.ask(planner+' 你负责独立复核草案验收条件：逐条手算样例，纠正与原始自然语言冲突的预期（零值、负数、空值、顺序等），不要改变用户明确给出的示例。输出完整修订契约，不输出评论。',{request,draft,pinned:pins});
+  const spec=lockExamples(contract(reviewed),pins);
   const cases=[...spec.cases];
   for(const c of old?.spec.cases||[]){
     if(!spec.fields.some(f=>Object.hasOwn(c.values,f.id))||!spec.actions.some(a=>a.id===c.action))throw Error('变更与已有控件不兼容');

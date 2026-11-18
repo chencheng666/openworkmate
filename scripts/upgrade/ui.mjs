@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s), input=$('#request'), list=$('#jobs'), error=$('#error');
-const edit=new URLSearchParams(location.hash.slice(1)).get('request');if(edit)input.value=edit.slice(0,600);
+const edit=new URLSearchParams(location.hash.slice(1)).get('request');if(edit)input.value=edit.slice(0,1200);
 const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text});
 const link=(name,url)=>Object.assign(el('a',name),{href:url,target:'_blank',rel:'noopener noreferrer'});
 let last='';
